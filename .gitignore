@@ -1,0 +1,16 @@
+node_modules/
+*.tsbuildinfo
+.DS_Store
+
+/.svelte-kit/
+/build/
+vite.config.ts.timestamp-*
+
+.env
+.env.*
+!.env.example
+
+.private/
+CLAUDE.local.md
+.claude/settings.local.json
+AGENTS.local.md

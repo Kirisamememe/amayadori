@@ -1,0 +1,178 @@
+# 決めたことと理由(リポジトリ全体)
+
+`AGENTS.md` には「何をするか」だけを書き、理由はここに書く。tooling だけの判断は `tooling/DECISIONS.md` にある。決めたことを変えるときは、ここも直す。
+
+## 技術
+
+| 役割                             | 使うもの                                                                        | 理由                                                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 実行環境・パッケージ管理・テスト | Bun 1.4(`bun test`)                                                             | 1つのツールで済み、TypeScript をそのまま動かせる。本番も Bun で動かす(下の「adapter」)。                        |
+| フレームワーク                   | SvelteKit 3 + Svelte 5(runes)                                                   | サーバー付きで作れるので、CMS をサーバー側だけで呼べる(下の「Analemma への接続」)。                             |
+| adapter                          | `@sveltejs/adapter-bun`                                                         | 下の「adapter」。                                                                                               |
+| 型検査                           | TypeScript 7.1(beta)を svelte-check の `--tsgo` で使う                          | 下の「TypeScript」。                                                                                            |
+| 型付きの lint                    | tsrs(TS 7.1 を Rust に移植したもの)                                             | 型検査と同じ 7.1 に合わせる。`oxlint-tsgolint` は TS 7.0 を内蔵していて、型検査器のバージョンが食い違う。       |
+| Lint・整形                       | Oxlint + oxfmt                                                                  | ESLint と typescript-eslint は TS 7 に対応していない。oxfmt は `.svelte` も整形できる(`tooling/DECISIONS.md`)。 |
+| コンポーネントのテスト           | `bun test` + happy-dom(`@happy-dom/global-registrator`)+ `@testing-library/dom` | 下の「コンポーネントのテスト」。                                                                                |
+
+tsrs はまだ prerelease なので、型エラーの判定は svelte-check(中で TS 7.1 の `tsc` を流す)だけで行い、tsrs は lint のルールにだけ使う(Oxlint の `typeCheck` は使わない)。tsrs にずれがあっても、影響を lint に閉じ込められる。tsrs で困ったら、ユーザーに報告する。
+
+## 使わないもの
+
+- **ESLint・typescript-eslint**:TS 7 に対応していない。Svelte のテンプレートを lint する eslint-plugin-svelte も、そのために使えない(足りない所は `tooling/DECISIONS.md` の「Svelte のファイルの lint と整形」)。
+- **Prettier の直接の利用**:整形は oxfmt が担う。oxfmt は `.svelte` の整形に prettier-plugin-svelte を内蔵して使う。
+- **Vitest**:テストは `bun test` で足りる(下の「コンポーネントのテスト」)。テストの道具を2つ持たない。
+- **スタイリング(Tailwind やデザインシステム)**:まだ入れない(ユーザーが決めた)。入れるかは、後でユーザーと決める。
+
+## 依存の入れ方
+
+- バージョンは範囲でなく1つに固定する(`bunfig.toml` の `exact`)。lint のツールは、バージョンを少し上げただけでもルールが増え、ある日突然 check が落ちるため。
+- 宣言していない依存は import できない(`bunfig.toml` の `linker = "isolated"`)。たまたま読めてしまう事故を防ぐ。
+
+## adapter
+
+`@sveltejs/adapter-bun` で、`bun ./build` で動くサーバーを出す。
+
+- Analemma と同じサーバー(自宅の NAS か VPS)に置き、Analemma も Bun で動く。実行環境を Bun の1つにそろえられる。
+- SvelteKit の公式の adapter。adapter-node でも Bun で動かせるが、Node 向けの作りを Bun で動かすことになる。
+- 静的なサイトにする adapter(adapter-static)は使わない。CMS を呼ぶのはサーバー側だけにするため、要求のたびにサーバーで描画する。
+- 開発のサーバーとビルドも Bun で流す(`bun --bun vite`)。本番と同じ実行環境で確かめるため。
+- adapter-bun は、既定ですべてのアドレスで待ち受ける(`HOST`・`PORT` で変えられる)。本番の置き方(リバースプロキシの後ろに置くか)は、まだ決めていない。
+
+## TypeScript
+
+型エラーの判定は TypeScript 7.1(beta)で行う。ただし、`typescript` のパッケージは 6.0 にする。
+
+- svelte-check 4.7 と SvelteKit 3.4 は、peer に `typescript` の 6 系(svelte-check は 5 か 6)を求める。`.svelte` を TypeScript に変換する svelte2tsx が、6 系までの JS API を使うため。
+- svelte-check の `--tsgo` は、`.svelte` を svelte2tsx で変換して `.svelte-kit/.svelte-check` に書き出し、`@typescript/native` に入れた TS 7 の `tsc` で検査する。`@typescript/native` は `typescript@7.1.0-beta` の別名で入れる。こうして、型の判定は 7.1 で行い、6 系は変換にだけ使う。
+- `node_modules/.bin/tsc` は 7.1 を指す(手で確かめた)。
+- svelte-check は Node で動き、`--tsgo` でも `node` で `tsc` を起動する。手元と CI には Node が要る。
+- `--tsgo` は、前の実行で書き出した変換の結果を消さない。`.svelte` から `<script lang="ts">` を外すと、古い `.ts` が残って、もう無いコードの型エラーを出した(手で確かめた)。そのため、`bun run typecheck` は、毎回 `.svelte-kit/.svelte-check` を消してから流す。`--incremental` は使っていないので、消しても遅くならない。
+- `--tsgo` は、tsconfig の `exclude` を見ずに、リポジトリの全部の `.svelte` に Svelte のコンパイラの警告を出す(`--ignore` は `--tsconfig` と一緒に使えない)。lint の fixture の `.svelte` も検査されるので、fixture は Svelte の警告が出ない形で書く。
+- `--fail-on-warnings` で、Svelte のコンパイラの警告(アクセシビリティなど)も止める。
+- tsconfig は、SvelteKit が書き出す `$app/tsconfig` を extends し、strict の外にある検査も全部入れる。型を消すだけで実行できる構文に限る(`erasableSyntaxOnly`)。`$app/tsconfig` は `svelte-kit sync` が `node_modules/$app` に書くので、`bun install` の `prepare` と `bun run typecheck` で sync を流す。
+- `$app/tsconfig` は `checkJs` を有効にするが、このリポジトリでは切る。tsconfig には、型付きの lint が型を引けるよう `oxlint.fixtures.config.mjs` を入れているが、型の注釈を持たない JS なので、検査すると暗黙の `any` で落ちる。
+
+## SvelteKit の設定
+
+- runes を強制する(`vite.config.ts` の `compilerOptions.runes`)。古い書き方を混ぜない。
+- `src/lib/` は package.json の `imports` で `#lib/...` から読む。`#lib/*.svelte` は `.svelte` に、`#lib/*` は `.ts` に対応させる。SvelteKit 3 は `$lib` を作らず、Node の subpath imports を使うため。拡張子を `.ts` に決め打ちするので、import に `.ts` を書かずに済み、lint の `import/extensions`(拡張子を書かない)と合う。TypeScript・Vite・Bun が、そのまま解決する。
+- runes を使うモジュール(`.svelte.ts`)は、相対パスで `./counter.svelte` と書いて import する(どれも手で確かめた)。
+  - `#lib/*.svelte.ts` を足して `#lib/counter.svelte.ts` と書くと、TypeScript・Vite・Bun は解決するが、lint の `import/extensions` が `.ts` の拡張子に診断を出す。
+  - `#lib/counter.svelte` は `#lib/*.svelte` に当たり、`counter.svelte` そのものを探すので、TypeScript と Bun が解決できない(Vite だけが解決する)。
+  - 相対パスの `./counter.svelte` は、どのツールも拡張子を足して `counter.svelte.ts` を探す。lint も `.svelte` の拡張子として受け入れる。同じフォルダに `counter.svelte` があると、そちらが先に見つかるので、同じ名前の `.svelte` と `.svelte.ts` を並べない。
+- コンポーネントのファイルの名前も kebab-case にする。ほかのファイルとそろえ、検査を1つにするため。
+
+## 環境変数
+
+- SvelteKit 3 の `defineEnvVars` で、`src/env.ts` に定義し、起動のときに検証する。値は `$app/env/private` から読む。`process.env` は lint で止める。読む場所を散らかさず、型の付いた検証済みの値だけを使うため。
+- `$app/env/private` は SvelteKit の「サーバーでだけ読めるモジュール」で、ブラウザに届くコードから import すると、ビルドが止まる(`server_only_import`。手で確かめた)。
+- ビルドも、環境変数を検証する(手で確かめた)。そのため、`bun run check` の手元には `.env` が要り、CI は workflow で値を渡す。CI の値は、手元の既定と同じ、秘密でない URL。
+- 検証の関数は、断るときの文言に値を出さない。URL に資格情報を書き間違えても、ログに残さないため。
+
+## Analemma への接続
+
+Analemma(コンテンツを持つヘッドレス CMS)は、外部用のポート(管理画面と、その API)と、内部用のポート(公開 API とデプロイ用 API)を持つ。2つのポートと client は、Analemma で作っている途中で、まだ Analemma の main に無い。つなぐときに、内部用のポートをサーバーの外に出していないこと(待ち受けるアドレスと、リバースプロキシやファイアウォールの設定)を確かめる。
+
+### 公開 API を呼ぶ
+
+- 公開 API は、このサイトのサーバー側からだけ呼ぶ。資格情報は要らないが、内部用のポートをサーバーの外に出さないので、ブラウザからは届かない。
+- URL は、環境変数 `ANALEMMA_INTERNAL_URL` で渡す(既定の例は `http://127.0.0.1:8788`。別のコンテナで動かすときは、内部のネットワークのアドレス)。http か https の origin(スキーム・ホスト・ポート)だけを受け、資格情報・パス・クエリ・フラグメントは断る(`src/lib/server/analemma/parse-internal-url.ts`)。内部用のポートには直接つなぐのでパスは要らず、client が base の URL にパスを足すときに、base のパスが落ちたり重なったりする余地を残さない。
+- 公開 API の client(`@analemma/client`)は、`src/lib/server/analemma/` に置く。`src/lib/server/` は SvelteKit がブラウザに届くコードからの import を止めるので、URL も client もブラウザに出ない。
+- client はまだ無い(Analemma で作っている途中)。入ったら、`src/lib/server/analemma/` で `ANALEMMA_INTERNAL_URL` から client を作り、`+page.server.ts`・`+layout.server.ts` の load から呼ぶ。
+- load は、表示に要る項目だけを選んで返す。公開 API の応答をそのまま返さない。load の戻り値は HTML と、ページを移るときの応答に入ってブラウザに届く。SvelteKit が止めるのは、サーバーでだけ読めるモジュールの import だけで、値の中身は見ない。
+- 公開していないページは、公開 API からは「無い」と返る。このサイトでも「無い」に見せる(404 にするか、ナビゲーションから外す)。
+
+### 種類の定義を送る
+
+- 固定ページの種類の原本は、このリポジトリのコード。client の `defineKind` で、`src/lib/server/kinds/` に書く。型は TypeScript が推論するので、load の戻り値やコンポーネントの props に、手で型を写さない。種類はサーバー側でだけ使う(ブラウザに届けるのは、load が返した値だけ)。
+- 本番のデプロイのときに、client に同梱する CLI が、種類の定義をデプロイ用 API に送る(migration と同じ考え方)。デプロイ用のトークンは、デプロイの環境にだけ置き、動いているサーバーには渡さない。
+- 手順は、ビルド → CLI で種類の定義を送る → 新しいビルドに切り替える、の順にする。Analemma が断ったら(壊れる変更など)、切り替えずにデプロイを止める。古いビルドが動いたまま残る。
+- 種類の定義を送ってから切り替えるまでの間と、切り替えに失敗したときは、古いビルドが新しい定義の CMS を読む。そのため、種類の定義は、古いビルドも新しいビルドも読める形で変える。項目を足すときは、古いビルドが知らない項目として無視できる形にし、項目を消すのは、その項目を使わないビルドに切り替えた後のデプロイで行う。全部の種類を1回で送るか、途中で断られたときに一部だけ変わるかは、CLI とデプロイ用 API の作りによる(Analemma の側で決める)。
+- CLI は package.json の script(`kinds:push` の予定)から流し、本番のデプロイの手順がそれを呼ぶ。プレビューのデプロイからは送らない。
+- CLI の引数・環境変数の名前・終了コードは、CLI ができてから決める。それまでは、`src/lib/server/kinds/` も script も作らない。空のフォルダは git に残らず、何もしない script はデプロイの手順に空振りの成功を残すため。
+
+## 境界はツールで強制する
+
+文書だけの約束は守られない。文書はコードを変えても自動では直らず、もう無いものを使うよう指示したまま残る。lint やテストやビルドで止められる約束は、文書に書く代わりに lint やテストにする。
+
+- `bun run check` にビルドを入れる。サーバーでだけ読めるモジュールを、ブラウザに届くコードから import したことは、ビルドでしか止まらない(svelte-check は止めない)。
+
+## コメントとテスト
+
+- 仕様と振る舞いはテストで表し、コメントには書かない。エージェントはコードだけを直して、コメントを直し忘れる。テストなら、ずれたときに落ちる。
+- TSDoc には役割と定義だけを書く。`@param` と `@returns` は書いてよいが、名前・有無・型は lint で実装と突き合わせ、言い回しは本文と同じく役割と定義に限る。
+- コメントは、短い行末のコメント(コードと同じ行の後ろに付ける説明)だけを許す。そのくらいの短さなら、コードと一緒に目に入り、直し忘れにくい。
+- 例外として、長いファイルを区切る分割の見出しを許す。見出しは仕様ではなく目次なので、コードと食い違いにくい。短いファイルでは見出しが要らないので、コードが200行を超えるファイルでだけ許し、400行を超えるファイルでは必須にする。
+- 設定ファイル(JSON・TOML・YAML)にもコメントを書かず、理由は `DECISIONS.md` に書く。例外は、GitHub Actions の workflow で、コミットの SHA で固定した actions の行末に書くバージョンだけ(`tooling/DECISIONS.md` の「CI」)。
+- マークアップの作りをなぞるだけのテストは書かない。実装をなぞるテストは、実装を変えるたびに直すだけで、何も守らない。要素は role・label・text など、訪問者に見えるもので探し、見える結果を確かめる(下の「コンポーネントのテスト」)。
+
+### コンポーネントのテスト
+
+- Svelte のコンポーネントや runes を読むテストは `*.svelte.test.ts` に置き、`bun test --conditions=browser` で流す(`bun run test:components`)。ほかのテストは、ブラウザの条件を付けずに流す(`bun run test:unit`)。`bun run test` は両方を流す。
+  - Svelte は、`svelte` の import を、ブラウザ版(`mount` が使える)とサーバー版で出し分ける。ブラウザ版にするには、import の解決にブラウザの条件が要る。
+  - 全部のテストにブラウザの条件を付けると、ほかのパッケージもブラウザ版になる。tooling が使う oxc-parser は、ブラウザ版が WebAssembly 版で、入っていないので読み込めなかった(手で確かめた)。
+  - Bun の実行時の plugin では、`svelte` のようなパッケージの名前の解決を差し替えられなかった(`onResolve` が呼ばれない。手で確かめた)。そのため、流すコマンドを分ける。
+- `bunfig.toml` の preload(`tooling/svelte-test/preload.ts`)が、`.svelte` と `.svelte.ts` を Svelte のコンパイラに通す。ブラウザの条件のある実行でだけ、happy-dom の document を用意し、テストのたびにコンポーネントを外す。条件の無い実行で Svelte のファイルを読むと、`*.svelte.test.ts` に置くよう求めて止まる。
+- コンポーネントを描画するのは `tooling/svelte-test/render.ts` の `render`、要素を探すのは `@testing-library/dom` の `screen`。`@testing-library/svelte` は Vitest を前提にしているので使わない。
+- 描画するのはブラウザ版の Svelte で、サーバーで描画した HTML(SSR)は確かめない。SSR は、型検査とビルドで確かめる。`$app/state` のような SvelteKit のモジュールは、`bun test` では読めない。それを使うコンポーネントは、値を props で受け取る形にするか、ブラウザでの確認(まだ無い)に任せる。
+- 出し分けの無いコンポーネントには、テストを求めない。決まった文言を描画して確かめるだけのテストは lint を通ってしまうので、セルフレビューで見る。
+
+## ファイルの長さ
+
+ファイルのコードは、原則として400行までにする。エージェントは長いファイルを一部だけ読んで見落としたり、似たコードの多いファイルで置き換える場所を取り違えたりしやすく、並行して作業すると同じファイルで衝突しやすい。人にとっても見通しが悪い。
+
+| コードの行数 | 扱い                                                                                                                                                                                                                        |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 200行まで    | 分割の見出しは書けない                                                                                                                                                                                                      |
+| 201〜400行   | 見出しは書いても書かなくてもよい                                                                                                                                                                                            |
+| 401〜800行   | 原則として分ける。`.svelte` 以外のソースで、どうしても分けられないときだけ、ファイルの1行目に理由付きの抑制(`// oxlint-disable project/max-code-lines -- 理由`)を書いて許す。見出しは必須。エージェントはユーザーに報告する |
+| 801行以上    | 理由があっても許さない                                                                                                                                                                                                      |
+
+- 行数は、空行とコメントだけの行を除いて数える。コメントや空行で水増しできず、整形のための空行が上限を圧迫することもない。
+- Svelte のコンポーネントは、`<script>`・マークアップ・`<style>` を合わせて数え、400行を超えたら抑制できない。コンポーネントは分けやすく、ファイルの1行目は `<script>` なので、理由付きの抑制を書く場所も無い。
+- 越えられない上限や、抑制できないルールは、lint だけでは守れない。Oxlint には抑制のコメントを無視する実行の仕方が無く、コメント1つで診断ごと消せてしまう。Oxlint は `.svelte` の `<script>` しか見ない。そこで、リポジトリの全ソースを読むテスト(`tooling/structure/`)でも検査する。
+- 抑制には、ルールの名前と理由が要る(lint とテストで止まる)。Svelte のコンパイラの警告を抑える `svelte-ignore` にも、`--` の後の理由を求める(テストで止まる)。理由の無い抑制は、黙って抜け道を作るのと同じだから。
+
+## フォルダの整理
+
+- テストは、テストするコードと同じフォルダの `__tests__` に置く。コードのすぐ近くに置けるうえ、フォルダの一覧ではコードとテストが混ざらない。SvelteKit は `+` で始まらないファイルを route にしないので、`src/routes/` の中にも置ける。
+- 1つのフォルダに置けるのは10件まで。超えたら、中身を言い当てる名前のフォルダに分ける。数で縛らないと、エージェントはファイルを足し続けるだけになる。`src/routes/` の route が増えたら、`(group)` で分ける。
+- ファイルとフォルダの名前は kebab-case にそろえる。`src/routes/` の中では、SvelteKit が決めた形(`[slug]`・`[[lang]]`・`[...rest]`・`[id=matcher]`・`(group)`)も許す。route の形は SvelteKit が決めていて、こちらで変えられないため。
+- 検査の詳しいことは `tooling/DECISIONS.md` にある。
+
+## 割り切り
+
+実害の無い失敗は、直すのに骨が折れるなら直さず、一番近い `DECISIONS.md` の「割り切ったこと」に、起きる条件と直さない理由を書く。直すと、守る価値の小さい失敗のために、コードと約束が増える。同じ件がレビューのたびに指摘されても、直すかどうかを毎回決め直さずに済むようにするため。前提が変わったら(実害が出るようになったら)、直すかを決め直す。
+
+## エージェント向けの文書
+
+- 指示は `AGENTS.md` に書き、`CLAUDE.md` は `AGENTS.md` を読み込むだけにする。作業の一部を Codex にも任せるので、どちらのエージェントも同じ指示を読めるようにする。
+- 手元の環境だけの約束(参照するリポジトリの場所や扱い)は、コミットしない `AGENTS.local.md` に書く。
+- 設計の判断と理由は、関係するコードに一番近いフォルダの `DECISIONS.md` に置く。コメントをほとんど書かないので、コードを読む人が理由に辿り着ける場所が要る。
+- lint のルールに無理があるときは、エージェントにルールへ無理に合わせさせず、ユーザーに報告させる。不自然なコードや抜け道が黙って増えるより、ルールを直す方がよい。
+
+## 用語集
+
+- 用語集(直下の `GLOSSARY.md`)は、認識の齟齬を防ぐために置く。コードはほとんどエージェントが書き、エージェントは作業のたびに言い方を選び直す。齟齬が起きるのは、何を指すか分からない造語や比喩を書いたときと、このリポジトリの中で意味が分かれる語を、どの意味か書き分けずに使ったとき。
+- 載せるのは、書かない語、取り違えると困る語、このリポジトリの大事な概念の名前だけ。長いと、エージェントが毎回読むには重く、大事な語が埋もれる。
+- CMS(Analemma)と同じ物事を指す語(種類・公開 API・内部用のポートなど)は、Analemma の用語集と同じ書き方にする。2つのリポジトリの文書を行き来しても、同じ物事が同じ名前で読めるように。
+- 英語の語は英語のまま書くのを既定にし、訳すのは、日本語の技術文書で定着した訳語があるときだけにする。自分で訳した語は、読み手がもとの英語を思い浮かべないと意味が取れない。Svelte の component を「部品」と訳さず「コンポーネント」と書くのも、このため(エージェントは「部品」と書きがちなので、機械で探す語にした)。
+- 用語集の「機械で探す語」に挙げた表記は、`tooling/structure/` のテストが文書・コメント・文字列から探す。挙げるのは、ほかの意味ではまず使わない表記と、エージェントが書きがちな言い回しだけ。広く使う語を探すと、別の概念を指す正しい文まで落とす。詳しいことは `tooling/DECISIONS.md` にある。
+
+## ほかのリポジトリに触れない
+
+- このリポジトリは公開する。コミットするもの(文書・コード・コミットのメッセージ)に、ほかのリポジトリの名前や中身を書かない。非公開のリポジトリの名前や中身が、公開した後に残る。
+- 理由は、このリポジトリの言葉で書く。ほかのリポジトリで起きたことを根拠にすると、読み手はそのリポジトリを見られず、確かめられない。名前を伏せた言い方も同じ。
+- コンテンツを取る CMS(Analemma)は、プロダクトの関係なので対象にしない。
+- 名前の一覧はコミットしない。一覧そのものに、非公開のリポジトリの名前が入るため。このリポジトリのメインの checkout の `.private/other-repositories.txt` に置き、`tooling/structure/` のテストと、コミットのときの git の hook がそこから読んで探す。一覧が無い環境では探さない。詳しいことは `tooling/DECISIONS.md` にある。
+
+## コミットのメッセージ
+
+- 1行目は Conventional Commits の `type(scope): 件名` で書き、件名は日本語で書く。type と scope の一覧は、`commitlint.config.ts` にだけ書く。
+- scope は、`routes`(ページ。`src/routes/`)・`components`(コンポーネント)・`cms`(Analemma への接続。公開 API の呼び出し・種類の定義・CLI)・`tooling`(lint・検査・hook・CI)・`deps`(依存の更新)。変更の場所で選べるよう、フォルダと役割に合わせた。
+- メッセージの形と、メッセージの中にあるほかのリポジトリの名前・「機械で探す語」に挙げた表記は、コミットのときに git の hook が確かめる。`bun run check` はコミットの前に流すので、メッセージを見られない。
+- PR では、CI が、PR のコミットのメッセージと、main に残る PR のタイトルを、commit-msg の hook と同じ検査に掛ける。hook を飛ばしたコミットや、GitHub の画面で書くタイトルのように、hook を通らないメッセージも確かめるため。詳しいことは `tooling/DECISIONS.md` の「CI」にある。
+
+## 割り切ったこと
+
+- **`.svelte` の `<script>` の型付きの lint**:Oxlint は `.svelte` の `<script>` を lint するが、型付きのルール(`no-floating-promises`・`strict-boolean-expressions` など)は流れない(手で確かめた)。ロジックを `.ts` に置く約束(`AGENTS.md`)と、セルフレビューで補う。型エラーそのものは svelte-check が止める。

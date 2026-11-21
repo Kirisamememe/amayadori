@@ -1,0 +1,35 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "endOfLine": "lf",
+  "ignorePatterns": [
+    "node_modules/**",
+    ".svelte-kit/**",
+    "build/**",
+    "bun.lock"
+  ],
+  "printWidth": 80,
+  "semi": true,
+  "singleQuote": false,
+  "sortPackageJson": false,
+  "svelte": true,
+  "trailingComma": "all",
+  "sortImports": {
+    "customGroups": [
+      {
+        "groupName": "kit",
+        "elementNamePattern": ["$app/**", "$env/**"]
+      },
+      {
+        "groupName": "project",
+        "elementNamePattern": ["#lib/**"]
+      }
+    ],
+    "groups": [
+      ["builtin", "external"],
+      "kit",
+      "project",
+      ["parent", "sibling", "index"],
+      "unknown"
+    ]
+  }
+}

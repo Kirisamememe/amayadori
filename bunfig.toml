@@ -1,0 +1,7 @@
+[install]
+exact = true
+linker = "isolated"
+
+[test]
+preload = ["./tooling/svelte-test/preload.ts"]
+pathIgnorePatterns = ["tooling/lint/fixtures/**", "build/**", ".svelte-kit/**"]

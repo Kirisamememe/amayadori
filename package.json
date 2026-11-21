@@ -1,0 +1,49 @@
+{
+  "name": "amayadori",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#lib/*.svelte": "./src/lib/*.svelte",
+    "#lib/*": "./src/lib/*.ts"
+  },
+  "scripts": {
+    "dev": "bun --bun vite dev",
+    "build": "bun --bun vite build",
+    "preview": "bun --bun vite preview",
+    "start": "bun ./build",
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run build",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint --disable-nested-config",
+    "lint:fix": "oxlint --disable-nested-config --fix",
+    "typecheck": "svelte-kit sync && rm -rf .svelte-kit/.svelte-check && svelte-check --tsgo --tsconfig ./tsconfig.json --output human --fail-on-warnings",
+    "test": "bun run test:unit && bun run test:components",
+    "test:unit": "bun test --path-ignore-patterns='tooling/lint/fixtures/**' --path-ignore-patterns='**/*.svelte.test.ts'",
+    "test:components": "bun test --conditions=browser .svelte.test.ts",
+    "prepare": "svelte-kit sync && bun tooling/git-hooks/install.ts"
+  },
+  "packageManager": "bun@1.4.2",
+  "devDependencies": {
+    "@commitlint/cli": "21.2.4",
+    "@commitlint/config-conventional": "21.2.4",
+    "@commitlint/types": "21.2.3",
+    "@happy-dom/global-registrator": "21.0.4",
+    "@stylistic/eslint-plugin": "6.0.1",
+    "@sveltejs/adapter-bun": "1.0.2",
+    "@sveltejs/kit": "3.4.0",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@testing-library/dom": "10.4.2",
+    "@types/bun": "1.4.5",
+    "@typescript/native": "npm:typescript@7.1.0-beta",
+    "eslint-plugin-jsdoc": "65.5.0",
+    "eslint-plugin-prefer-arrow-functions": "3.10.2",
+    "oxc-parser": "0.159.0",
+    "oxfmt": "0.79.0",
+    "oxlint": "1.94.0",
+    "svelte": "5.59.1",
+    "svelte-check": "4.7.8",
+    "tsrs": "7.1.0-beta.tsrs4",
+    "typescript": "6.0.3",
+    "vite": "8.3.8"
+  }
+}
