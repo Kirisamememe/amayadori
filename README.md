@@ -62,7 +62,7 @@ cp .env.example .env
 
 本番の置き場所とデプロイの手順は、まだ決めていない。今は、次の順で手元で試せる(Analemma の README の「本番の形で試す」)。
 
-1. `bun run build` でビルドする。
+1. `bun run build` でビルドする。動いているビルドがあるときは、別の checkout でビルドする(同じ checkout では、動いているビルドの `build/` を上書きする)。
 2. `ANALEMMA_DEPLOY_TOKEN` を渡して `bun run kinds:push` を流す。0 で終わらなければ、ここで止める(古いビルドが動いたまま残る)。
 3. 動いているサーバーを止め、`bun run start` で新しいビルドを動かす。
 
