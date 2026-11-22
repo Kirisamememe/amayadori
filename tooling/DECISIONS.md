@@ -2,7 +2,13 @@
 
 ## lint の設定
 
-設定は `.oxlintrc.json`。型付きのルールは fixture では確かめられない(fixture は型を使わずに検査する)。
+設定は直下の `oxlint.config.ts`。型付きのルールは fixture では確かめられない(fixture は型を使わずに検査する)。
+
+- **設定を TypeScript で組み立てる**:設定は1つの JSON ではなく、`oxlint.config.ts` が `tooling/lint/config/` のモジュール(組み込みのプラグインのルール・自作と JS のプラグインのルール・`overrides`・API の制限を組み立てる関数)を組み立てる。Oxlint の `overrides` は、同じルールを書くと前の options を丸ごと置き換える。JSON では、場所ごとに少しずつ違う制限を書くたびに、残す制限まで全部書き写すことになり、写し間違いや、外すつもりの無い制限まで外す誤りが起きる。制限の一覧を定数に置けば、1か所から場所ごとに組み立てられる。今は `src/` の制限が1か所だけだが、`overrides` を足すときに同じことが起きるので、先に形を作っておく。`defineConfig` の型で、Oxlint が型を持つ組み込みのルールの options は型検査に掛かる(JS のプラグインのルールの名前と options は、型が `unknown` なので掛からない)。
+- **設定のファイルの import**:設定のファイルは、Oxlint が Node の `import()` で読む。Node は TypeScript を型消去で読むだけで、拡張子の無い相対 import を解決しないので、設定のファイル(`oxlint.config.ts`・`oxlint.fixtures.config.ts`・`tooling/lint/config/`)の相対 import には `.ts` を付ける(fixture は `tooling/lint/fixtures/{valid,invalid}/tooling/lint/config/`)。`import/extensions` も、そこでだけ `.ts` を求める(`tooling/lint/**/*.mjs` に `.mjs` を求めるのと同じ理由)。`overrides` は options を丸ごと置き換えるので、`.svelte`・`.json` などの拡張子の指定も同じ定数から書き足す。TypeScript の設定のファイルを読むには、型消去を既定で使う Node が要る(README の「使い方」。CI の runner には Node 24 が入っている)。
+- **`src/` のテストの制限**:`src/` のテストで Bun と Node を許す `overrides` は、制限を `off` にせず、`src/` の制限から Bun と Node を除いたもので組み立てる。`off` にすると、後で `src/` に足した制限まで、テストで黙って外れる。`overrides` は後に書いたものが勝つので、この設定は `src/` の設定より後に置く。
+- **設定を読めなかったとき**:fixture のテストは、Oxlint が設定を読めずに JSON の結果を出さなかったときに、Oxlint の出力をそのまま失敗の文言に入れる。Node が古いと、JSON を読めないという失敗だけが出て、原因が分からない。
+- **ルールの一覧を分ける**:1つのファイルのコードは400行までなので、ルールの一覧も、組み込みのプラグインのルール(`core-rules.ts`)と、自作と JS のプラグインのルール(`project-rules.ts`)に分ける。
 
 - **自作のルール**(`tooling/lint/rules/`)
   - `no-standalone-comment`:単独の行のコメントとブロックコメントを禁止し、行末のコメントは40文字までにする。lint への指示(`oxlint-disable` など)と `@ts-expect-error` は除く。TSDoc は宣言・型のプロパティ・メンバーの直前にだけ書ける。分割の見出し(10本以上の `-` の罫線・見出しの行・罫線の3行)は、コードが200行を超えるファイルでだけ許し、400行を超えるファイルには1つ以上を求める。行数は、空行とコメントだけの行を除いて数える。見出しの行は、文字か数字を含み、lint への指示ではないものに限り、40文字までにする。必須の条件を満たすのは、後ろにコードが続く見出しだけ。改行は LF・CRLF・CR・U+2028・U+2029 のどれでも1行と数える。TSDoc と宣言のあいだに見出しを挟むと、宣言の直前に無い TSDoc の診断を出す。
@@ -12,7 +18,7 @@
   - `require-disable-reason`:lint の抑制に、ルールの名前と `--` の後の理由を求める。ルールの名前と説明の区切りは、Oxlint と同じ読み方にする。抑制できないルール(`file-length-limit`・`no-standalone-comment`・このルール自身)の抑制を止め、`max-code-lines` の抑制は1行目の `// oxlint-disable` の形だけを許す。
   - `no-focused-test`:`test.only`・`describe.skip`・`test.todo`・`test.if` などを禁止する。
   - `test-location`:テストのファイルを `__tests__` の直下に置かせ、`__tests__` にはテストのファイルだけを置かせ、`__tests__` の中にフォルダを作らせない。
-  - `max-exported-functions`:コードの行数(空行とコメントだけの行を除く)が200行を超えるファイルは、export できる関数を2つまでにする(型は数えない)。200行以下なら、数は問わない(ユーザーが決めた。理由は直下の `DECISIONS.md` の「ファイルの長さ」)。境目の200行は、分割の見出しを使える行数(`no-standalone-comment` の `dividerAllowedAfter`)と同じ値にする。数えるのは、アロー関数・関数宣言・関数式だけで、呼び出しの結果(関数を返す関数の戻り値など)は数えない。`src/lib/` と `tooling/` にだけ掛ける。SvelteKit の route のファイル(`+page.server.ts` など)と `hooks.server.ts` は、SvelteKit が決めた名前の関数(`load`・`handle`・`handleError`・`init` など)を export するので、数をこちらで決められない。
+  - `max-exported-functions`:コードの行数(空行とコメントだけの行を除く)が200行を超えるファイルは、export できる関数を2つまでにする(型は数えない)。200行以下なら、数は問わない(ユーザーが決めた。理由は直下の `DECISIONS.md` の「ファイルの長さ」)。境目の200行は、分割の見出しを使える行数と同じ値を、`tooling/lint/config/project-rules.ts` の1か所から渡す。数えるのは、アロー関数・関数宣言・関数式だけで、呼び出しの結果(関数を返す関数の戻り値など)は数えない。`src/lib/` と `tooling/` にだけ掛ける。SvelteKit の route のファイル(`+page.server.ts` など)と `hooks.server.ts` は、SvelteKit が決めた名前の関数(`load`・`handle`・`handleError`・`init` など)を export するので、数をこちらで決められない。
   - `no-inline-parameter-type`:関数の引数に、インラインのオブジェクト型を書かせず、名前付きの型にさせる。`max-exported-functions` と同じ範囲に掛ける。
   - `no-dynamic-import`:`import()` による動的な import を禁止する。境界を守る `no-restricted-imports` は動的な import を見ないので、`import()` なら Bun や Node の API を、`src/` から読めてしまう。
 - **CMS のリポジトリから持ってこなかったルール**:lint の自作のルールと検査は、CMS(Analemma)のものと同じ考え方で作り、このリポジトリに合わないものは持ってこなかった。
@@ -56,7 +62,7 @@
 - **import の並び**:oxfmt の `sortImports` に任せる。並びは整形の仕事で、保存のたびに直る。グループは、外のパッケージ、SvelteKit のモジュール(`$app/*`)、このリポジトリの `#lib/*`、相対パスの順。`.svelte` の `<script>` の中も、oxfmt が同じく並べる。
 - **ファイル名**:`unicorn/filename-case` で kebab-case を求める。SvelteKit の `+page.svelte` や `hooks.server.ts` は、診断を出さない(手で確かめた)。
 - **fixture のテスト**:`tooling/lint/__tests__/` に、ルールの分類ごとのテストのファイルを置く。lint の実行と結果の読み取りは `tooling/lint/fixture-lint.ts` にまとめる。正常系は、診断が0件であることに加えて、fixture を全部 lint したことも確かめる。
-- **fixture**:ルールの分類ごとのフォルダ(`comments/`・`tsdoc/`・`jsdoc/`・`functions/`・`imports/`・`syntax/`・`tests/`・`svelte/`)に分け、`src/` だけに掛かるルールの fixture は、`src/lib/` のように同じパスを再現したフォルダに置く。`tooling/lint/fixtures/` は `bun test` の対象から外す。
+- **fixture**:ルールの分類ごとのフォルダ(`comments/`(TSDoc は `comments/tsdoc/`)・`jsdoc/`・`functions/`・`imports/`・`syntax/`・`tests/`・`svelte/`)に分け、`src/` や設定のファイルだけに掛かるルールの fixture は、`src/lib/`・`tooling/lint/config/` のように同じパスを再現したフォルダに置く。`tooling/lint/fixtures/` は `bun test` の対象から外す。
   - `.svelte` の fixture は、Svelte のコンパイラの警告が出ない形で書く。svelte-check の `--tsgo` は、tsconfig の `exclude` を見ずに、全部の `.svelte` にコンパイラの警告を出す(直下の `DECISIONS.md` の「TypeScript」)。
 
 ## Svelte のファイルの lint と整形
@@ -101,8 +107,8 @@ Oxlint には、抑制のコメントを無視して実行する仕組みが無�
 - `.svelte` で、`<svelte:options runes={false} />` を書いていない。`vite.config.ts` で runes を強制しても、コンポーネントごとに切れてしまうため。
 - 抑制にルールの名前と理由があり、抑制できないルールを抑制していない。`.svelte` の `<script>` の中の抑制も同じ。
 - `svelte-ignore`(Svelte のコンパイラの警告の抑制)に、`--` の後の理由がある。Svelte は、`svelte-ignore` の警告の名前の後ろに書いた文を読まないので、理由を書いても抑制は効く(手で確かめた)。
-- Oxlint が飛ばす名前のソースのファイルが無い。Oxlint の設定は直下の `.oxlintrc.json` だけ(`bun run lint` は `--disable-nested-config` で入れ子の設定を読まない)。
-- 守るべきルールが `.oxlintrc.json` で `error` になっていて、`overrides` で弱めていない。lint とテストで、行数の境目がそろっている。
+- Oxlint が飛ばす名前のソースのファイルが無い。Oxlint の設定は直下の `oxlint.config.ts` だけ(`bun run lint` は `--disable-nested-config` で入れ子の設定を読まない)。
+- 守るべきルールが Oxlint の設定で `error` になっていて、`overrides` で弱めていない。lint とテストで、行数の境目がそろっている。
 
 lint のルールは、書いているときにすぐ気づくための早めの知らせとして残す。
 

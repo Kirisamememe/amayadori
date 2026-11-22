@@ -22,7 +22,7 @@ tooling/                  lint の自作のルール・検査・git の hook・C
 
 ## 使い方
 
-Bun 1.4 と Node(svelte-check が使う)が要る。
+Bun 1.4 と Node.js 24 以上が要る。svelte-check は Node で動き、Oxlint は TypeScript で書いた設定(`oxlint.config.ts`)を Node の型消去で読む。エディタの Oxc の拡張が別の Node を使うときは、拡張の設定 `oxc.path.node` で Node を指定する。
 
 ```bash
 bun install

@@ -38,7 +38,7 @@ export const lintFixture = (target: string): FixtureLintResult => {
     oxlintBin,
     [
       "--config",
-      "oxlint.fixtures.config.mjs",
+      "oxlint.fixtures.config.ts",
       "--disable-nested-config",
       "--format",
       "json",
@@ -46,6 +46,13 @@ export const lintFixture = (target: string): FixtureLintResult => {
     ],
     { cwd: repoRoot, encoding: "utf8" },
   );
+
+  if (!result.stdout.trimStart().startsWith("{")) {
+    throw new Error(
+      `Oxlint が JSON の結果を出さなかった:\n${result.stderr}\n${result.stdout}`,
+    );
+  }
+
   const report: unknown = JSON.parse(result.stdout);
 
   return {

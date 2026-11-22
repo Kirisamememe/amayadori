@@ -2,7 +2,6 @@
   "extends": "$app/tsconfig",
   "compilerOptions": {
     "types": ["$app/types", "bun"],
-    "checkJs": false,
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
@@ -13,6 +12,7 @@
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     "erasableSyntaxOnly": true,
+    "allowImportingTsExtensions": true,
     "module": "esnext",
     "moduleResolution": "bundler"
   },
@@ -21,7 +21,8 @@
     "tooling/**/*.ts",
     "vite.config.ts",
     "commitlint.config.ts",
-    "oxlint.fixtures.config.mjs"
+    "oxlint.config.ts",
+    "oxlint.fixtures.config.ts"
   ],
   "exclude": ["tooling/lint/fixtures/**"]
 }
