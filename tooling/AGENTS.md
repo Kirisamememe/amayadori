@@ -21,5 +21,5 @@
 - CI は `.github/workflows/` にある(理由は `tooling/DECISIONS.md` の「CI」)。job の `check`(`check.yml`)は、PR と main への push で `bun install --frozen-lockfile` と `bun run check` を流す。job の `commit-messages`(`commit-messages.yml`)は、PR で、PR のコミットのメッセージと、main に残る PR のタイトル(` (#番号)` を足した1行目)を、`tooling/ci/check-pull-request-messages.ts` で確かめる。
 - job の名前(`check`・`commit-messages`)は、main の ruleset で、通ることを必須にする check として登録した名前。変えるときは、ruleset も直す(ユーザーに頼む)。
 - `commit-messages` は、メッセージを commit-msg の hook のスクリプトに1件ずつ渡すだけ。メッセージの検査を変えるときは `tooling/git-hooks/` を直し、CI の側に検査を書き足さない。
-- 手元との違い:CI には、ほかのリポジトリの名前の一覧が無いので、名前を探さない(ファイルからも、メッセージからも)。名前を探すのは、手元の `bun run check` とコミットのときの hook だけ。PR のタイトルと、GitHub の画面で作ったコミットのメッセージは hook を通らないので、名前が無いかを自分で見る。
+- 手元との違い:CI には、ほかのリポジトリの名前の一覧が無いので、名前を探さない(ファイルからも、メッセージからも)。名前を探すのは、手元の `bun run check` とコミットのときの hook だけ。PR のタイトルは hook を通らないので、PR を作る前に、手元で `printf '%s' '<タイトル>' | bun tooling/ci/check-pull-request-messages.ts --base <base のブランチ> --head HEAD --number <番号の見込み>` に通す。PR の本文はどの検査も読まず、GitHub の画面で作ったコミットのメッセージは名前を探す検査を通らないので、名前が無いかを自分で見る。
 - workflow では、actions をコミットの SHA で固定し、行末のコメントにバージョンを書く(`uses: owner/repo@<SHA> # v1.2.3`)。`permissions` は最上位に、権限ごとに `read` か `none` で書き、job では決めない。どちらも `tooling/structure/` のテストが(`tooling/ci/workflows.ts` で YAML を読んで)確かめる。PR のタイトルのような外から来る値は、`${{ }}` で `run` に直接書かず、環境変数で渡す。
