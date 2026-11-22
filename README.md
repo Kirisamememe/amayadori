@@ -13,7 +13,7 @@ src/
     server/
       analemma/           Analemma の公開 API を呼ぶもの(サーバー側だけ)
       kinds/              固定ページの種類の定義(client が入ってから作る)
-tooling/                  lint の自作のルール・検査・git の hook・CI のスクリプト
+tooling/                  lint の自作のルール・検査・git の hook・CI とレビューのスクリプト
 ```
 
 - Analemma は、このサイトと同じサーバーで動く。公開 API は Analemma の内部用のポートで受け、このサイトのサーバー側からだけ呼ぶ(ブラウザからは呼ばない)。
@@ -41,6 +41,7 @@ cp .env.example .env
 | `bun run format`   | 整形する                                                                 |
 | `bun run lint:fix` | lint で直せるものを直す                                                  |
 | `bun run test`     | テストを流す(コンポーネントのテストは Svelte のブラウザ版で、別に流れる) |
+| `bun run review`   | 観点ごとのレビューを1回流す(`AGENTS.md` の「レビュー」)                  |
 
 ## 環境変数
 
