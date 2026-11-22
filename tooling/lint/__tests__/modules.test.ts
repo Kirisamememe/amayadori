@@ -51,12 +51,12 @@ describe("TSDoc の必須条件", () => {
       rule: "jsdoc-js(require-jsdoc)",
     },
     {
-      label: "TSDoc の無い、オブジェクト引数の項目",
+      label: "TSDoc の無い、オブジェクト引数のプロパティ",
       file: "jsdoc/missing-param-property.ts",
       rule: "jsdoc-type(require-jsdoc)",
     },
     {
-      label: "TSDoc の無い、型の項目",
+      label: "TSDoc の無い、型のプロパティ",
       file: "jsdoc/missing-property.ts",
       rule: "jsdoc-type(require-jsdoc)",
     },

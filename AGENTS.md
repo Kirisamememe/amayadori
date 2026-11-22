@@ -30,7 +30,7 @@
 
 ## Svelte と SvelteKit
 
-- コンポーネントは runes で書く(`vite.config.ts` で runes を強制している)。props の型は名前付きの型にし、型の項目に TSDoc を書く(lint で止まる)。
+- コンポーネントは runes で書く(`vite.config.ts` で runes を強制している)。props の型は名前付きの型にし、型のプロパティに TSDoc を書く(lint で止まる)。
 - ロジックは `.ts` に置き、`.svelte` には表示と、表示に近い小さな処理だけを置く。型付きの lint は `.svelte` の `<script>` に効かず、`.ts` ならテストも書きやすい。
 - テストは `bun test`。Svelte のコンポーネントや runes を読むテストは `*.svelte.test.ts` にする(Svelte のブラウザ版で流す。`tooling/svelte-test/`)。要素は role・label・text など、訪問者に見えるもので探し、見える結果を確かめる(マークアップの作りに依存する探し方は lint で止まる)。
 - `src/lib/` のファイルは `#lib/...` で import する(package.json の `imports`)。`.svelte` は拡張子を付け、`.ts` は付けない。runes を使うモジュール(`.svelte.ts`)だけは `#lib` で読めないので、相対パスで、`.ts` を除いた `./counter.svelte` の形で import する。同じフォルダに、同じ名前の `.svelte` と `.svelte.ts` を置かない。

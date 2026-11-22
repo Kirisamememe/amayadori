@@ -87,7 +87,7 @@ const severityOf = (value: unknown): unknown =>
 
 /** 設定から読み出すルールの options。 */
 type OptionQuery = {
-  /** options の項目の名前。 */
+  /** options のプロパティの名前。 */
   readonly name: string;
   /** 設定に書いたルールの値。 */
   readonly value: unknown;

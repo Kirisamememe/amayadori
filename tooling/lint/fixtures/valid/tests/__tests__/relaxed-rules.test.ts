@@ -10,7 +10,7 @@ type Post = {
 
 const titleOf = (post: Post): string => post.title;
 
-test("項目の一部だけを持つ作り物を、as で作れること", () => {
+test("プロパティの一部だけを持つ作り物を、as で作れること", () => {
   expect(titleOf({ title: "題" } as Post)).toBe("題");
 });
 
