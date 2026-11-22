@@ -180,7 +180,7 @@ Analemma(コンテンツを持つヘッドレス CMS)は、外部用のポート
 - 1行目は Conventional Commits の `type(scope): 件名` で書き、件名は日本語で書く。type と scope の一覧は、`commitlint.config.ts` にだけ書く。
 - scope は、`routes`(ページ。`src/routes/`)・`components`(コンポーネント)・`cms`(Analemma への接続。公開 API の呼び出し・種類の定義・CLI)・`tooling`(lint・検査・hook・CI)・`deps`(依存の更新)。変更の場所で選べるよう、フォルダと役割に合わせた。
 - メッセージの形と、メッセージの中にあるほかのリポジトリの名前・「機械で探す語」に挙げた表記は、コミットのときに git の hook が確かめる。`bun run check` はコミットの前に流すので、メッセージを見られない。
-- PR では、CI が、PR のコミットのメッセージと、main に残る PR のタイトルを、commit-msg の hook と同じ検査に掛ける。hook を飛ばしたコミットや、GitHub の画面で書くタイトルのように、hook を通らないメッセージも確かめるため。詳しいことは `tooling/DECISIONS.md` の「CI」にある。
+- PR では、CI が、PR のコミットのメッセージと PR のタイトルを、commit-msg の hook と同じ検査に掛ける。squash で入れると、PR のタイトルが main に残るコミットの1行目になる。hook を飛ばしたコミットや、GitHub の画面で書くタイトルのように、hook を通らないメッセージも確かめるため。詳しいことは `tooling/DECISIONS.md` の「CI」にある。
 
 ## 割り切ったこと
 
