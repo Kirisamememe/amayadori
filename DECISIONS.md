@@ -71,16 +71,24 @@ tsrs はまだ prerelease なので、型エラーの判定は svelte-check(中�
 
 ## Analemma への接続
 
-Analemma(コンテンツを持つヘッドレス CMS)は、外部用のポート(管理画面と、その API)と、内部用のポート(公開 API とデプロイ用 API)を持つ。2つのポートと client は、Analemma で作っている途中で、まだ Analemma の main に無い。つなぐときに、内部用のポートをサーバーの外に出していないこと(待ち受けるアドレスと、リバースプロキシやファイアウォールの設定)を確かめる。
+Analemma(コンテンツを持つヘッドレス CMS)は、外部用のポート(管理画面と、その API)と、内部用のポート(公開 API とデプロイ用 API)を持つ。つなぐときに、内部用のポートをサーバーの外に出していないこと(待ち受けるアドレスと、リバースプロキシやファイアウォールの設定)を確かめる。
+
+### client の入れ方(仮)
+
+- `@analemma/client` は、まだ npm に公開していない(公開の手順は、Analemma の側でライセンスと一緒に決める)。それまでは、このリポジトリの隣(`../analemma`)に置いた Analemma の checkout の `packages/client` を、`file:` の依存でつなぐ。client の型が参照する `@analemma/contract` は、Analemma の中では workspace の依存なので、`overrides` で同じ checkout の `packages/contract` に向ける。
+- `file:` の依存は、`bun install` のときに中身を写す。client を直したら、Analemma の `packages/client` で `bun run build` を流し直してから、このリポジトリで `bun install` を流し直す。
+- CI は、このリポジトリと、SHA で固定した Analemma の main のコミットを、同じフォルダの下に並べて checkout し、client をビルドしてから `bun install` を流す。npm に公開したら、普通の依存に替え、CI の Analemma の checkout を外す。
 
 ### 公開 API を呼ぶ
 
 - 公開 API は、このサイトのサーバー側からだけ呼ぶ。資格情報は要らないが、内部用のポートをサーバーの外に出さないので、ブラウザからは届かない。
 - URL は、環境変数 `ANALEMMA_INTERNAL_URL` で渡す(既定の例は `http://127.0.0.1:8788`。別のコンテナで動かすときは、内部のネットワークのアドレス)。http か https の origin(スキーム・ホスト・ポート)だけを受け、資格情報・パス・クエリ・フラグメントは断る(`src/lib/server/analemma/parse-internal-url.ts`)。内部用のポートには直接つなぐのでパスは要らず、client が base の URL にパスを足すときに、base のパスが落ちたり重なったりする余地を残さない。
 - 公開 API の client(`@analemma/client`)は、`src/lib/server/analemma/` に置く。`src/lib/server/` は SvelteKit がブラウザに届くコードからの import を止めるので、URL も client もブラウザに出ない。
-- client はまだ無い(Analemma で作っている途中)。入ったら、`src/lib/server/analemma/` で `ANALEMMA_INTERNAL_URL` から client を作り、`+page.server.ts`・`+layout.server.ts` の load から呼ぶ。
+- client は、`src/lib/server/analemma/cms.ts` で `ANALEMMA_INTERNAL_URL` から作り、`+page.server.ts`・`+layout.server.ts` の load から呼ぶ。
 - load は、表示に要る項目だけを選んで返す。公開 API の応答をそのまま返さない。load の戻り値は HTML と、ページを移るときの応答に入ってブラウザに届く。SvelteKit が止めるのは、サーバーでだけ読めるモジュールの import だけで、値の中身は見ない。
 - 公開していないページは、公開 API からは「無い」と返る。このサイトでも「無い」に見せる(404 にするか、ナビゲーションから外す)。
+- slug が Analemma の slug の形(英小文字・数字をハイフンでつないだ kebab-case で、100文字まで)に合わない URL は、公開 API を呼ばずに 404 にする。呼ぶと、公開 API は形の合わない slug を入力の誤りとして断り、client はそれを想定外の失敗として投げ、打ち間違えた URL が 500 になるため。
+- トップページの一覧には、このサイトが描ける種類のページだけを並べる。種類の定義からその種類を消しても、Analemma には種類とページが残り、一覧から 404 のページへのリンクができてしまうため。
 
 ### 種類の定義を送る
 
@@ -88,8 +96,10 @@ Analemma(コンテンツを持つヘッドレス CMS)は、外部用のポート
 - 本番のデプロイのときに、client に同梱する CLI が、種類の定義をデプロイ用 API に送る(migration と同じ考え方)。デプロイ用のトークンは、デプロイの環境にだけ置き、動いているサーバーには渡さない。
 - 手順は、ビルド → CLI で種類の定義を送る → 新しいビルドに切り替える、の順にする。Analemma が断ったら(壊れる変更など)、切り替えずにデプロイを止める。古いビルドが動いたまま残る。
 - 種類の定義を送ってから切り替えるまでの間と、切り替えに失敗したときは、古いビルドが新しい定義の CMS を読む。そのため、種類の定義は、古いビルドも新しいビルドも読める形で変える。項目を足すときは、古いビルドが知らない項目として無視できる形にし、項目を消すのは、その項目を使わないビルドに切り替えた後のデプロイで行う。全部の種類を1回で送るか、途中で断られたときに一部だけ変わるかは、CLI とデプロイ用 API の作りによる(Analemma の側で決める)。
-- CLI は package.json の script(`kinds:push` の予定)から流し、本番のデプロイの手順がそれを呼ぶ。プレビューのデプロイからは送らない。
-- CLI の引数・環境変数の名前・終了コードは、CLI ができてから決める。それまでは、`src/lib/server/kinds/` も script も作らない。空のフォルダは git に残らず、何もしない script はデプロイの手順に空振りの成功を残すため。
+- CLI は package.json の script `kinds:push` から流し、本番のデプロイの手順がそれを呼ぶ。プレビューのデプロイからは送らない。
+- `kinds:push` は、`src/lib/server/kinds/kinds.ts` の default export の種類を、`ANALEMMA_INTERNAL_URL` の Analemma に送る。公開 API と同じ内部用のポートなので、URL の環境変数を分けない。デプロイ用のトークンは、CLI が環境変数 `ANALEMMA_DEPLOY_TOKEN` から読む。`.env` には書かず、デプロイを流すときにだけ渡す(`.env` は動いているサーバーも読むため)。
+- CLI は、受け付けられたら 0、使い方の誤り(URL やトークンが無いなど)なら 2 で終わる。Analemma が断ったとき、定義のファイルを読めないとき、つながらないときは 1 で終わる。0 でなければ、新しいビルドに切り替えない。
+- 今の種類(自己紹介の `about` とメモの `note`)と、ページの URL の形(`/<種類>/<slug>`)は、デプロイを試すための仮のもの。どの固定ページを持つかと URL の形は、まだ決めていない(`AGENTS.md`)。
 
 ## 対応するブラウザ
 

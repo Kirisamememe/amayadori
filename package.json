@@ -11,6 +11,7 @@
     "build": "bun --bun vite build",
     "preview": "bun --bun vite preview",
     "start": "bun ./build",
+    "kinds:push": "analemma push-kinds ./src/lib/server/kinds/kinds.ts --url $ANALEMMA_INTERNAL_URL",
     "check": "bun run format:check && bun run lint && bun run typecheck && bun run test && bun run build",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
@@ -46,5 +47,11 @@
     "tsrs": "7.1.0-beta.tsrs4",
     "typescript": "6.0.3",
     "vite": "8.3.8"
+  },
+  "dependencies": {
+    "@analemma/client": "file:../analemma/packages/client"
+  },
+  "overrides": {
+    "@analemma/contract": "file:../analemma/packages/contract"
   }
 }

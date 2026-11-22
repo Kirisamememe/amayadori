@@ -195,6 +195,7 @@ GitHub Actions の workflow を、`.github/workflows/` に2つ置く。job の�
 
 - **`check`**(`check.yml`):PR と main への push で、`bun install --frozen-lockfile` と `bun run check` を流す。手元と同じ手順で、ビルドまで流す。ビルドが検証する `ANALEMMA_INTERNAL_URL` は、job の `env` で渡す(秘密でない、手元の既定と同じ値。直下の `DECISIONS.md` の「環境変数」)。
 - **`commit-messages`**(`commit-messages.yml`):PR で、PR のコミットのメッセージと、PR のタイトルを確かめる。今のリポジトリの設定では、merge の方法は squash だけで、main に残るコミットの1行目は PR のタイトルになるため。
+- **Analemma の checkout**:`@analemma/client` は npm に公開する前なので、どちらの job も、このリポジトリと Analemma の main を同じフォルダの下に並べて checkout してから `bun install` を流す(`check` は、client もビルドする)。Analemma は、確かめた main のコミットを SHA で固定する。固定しないと、このリポジトリが同じでも、Analemma の変更が CI の中で動く。client を直したら、SHA を上げる差分をこのリポジトリでレビューする。client を npm に公開したら外す(直下の `DECISIONS.md` の「client の入れ方(仮)」)。
 - **workflow を分ける**:`commit-messages` は、PR のタイトルを直したとき(`edited`)にも流す必要がある。`check` を同じ workflow に置くと、タイトルや本文を直すたびに `check` も流れる。job の `if` で `check` を飛ばすと、飛ばした job は通ったものとして扱われ、落ちていた `check` が、タイトルを直しただけで通ったことになる。同じ理由で、本文だけを直したときも `commit-messages` を飛ばさない。
 
 ### メッセージの検査

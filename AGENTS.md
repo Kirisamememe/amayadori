@@ -41,7 +41,7 @@
 ## Analemma とつなぐ
 
 - Analemma の公開 API は、サーバー側(`src/lib/server/`・`+page.server.ts`・`+layout.server.ts`)からだけ呼ぶ。ブラウザからも、`+page.ts` のような universal load からも呼ばない。URL は `ANALEMMA_INTERNAL_URL`(内部用のポート)。
-- 固定ページの種類は、Analemma の client の `defineKind` で、`src/lib/server/kinds/` に書く。種類の定義の原本はこのリポジトリのコード。client と CLI はまだ無い(`DECISIONS.md` の「Analemma への接続」)。
+- 固定ページの種類は、Analemma の client の `defineKind` で、`src/lib/server/kinds/` に書く。種類の定義の原本はこのリポジトリのコード。client は npm に公開する前なので、隣に置いた Analemma の checkout をつないでいる(`DECISIONS.md` の「client の入れ方(仮)」)。
 - load は、表示に要る項目だけを選んで返す。公開 API の応答をそのまま返さない(load の戻り値はブラウザに届く)。
 - 公開していないページは、このサイトからは「無い」に見せる(404 にするか、ナビゲーションから外す)。
 
