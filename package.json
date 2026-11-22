@@ -20,6 +20,7 @@
     "test": "bun run test:unit && bun run test:components",
     "test:unit": "bun test --path-ignore-patterns='tooling/lint/fixtures/**' --path-ignore-patterns='**/*.svelte.test.ts'",
     "test:components": "bun test --conditions=browser .svelte.test.ts",
+    "review": "bun tooling/review/review.ts",
     "prepare": "svelte-kit sync && bun tooling/git-hooks/install.ts"
   },
   "packageManager": "bun@1.4.2",
