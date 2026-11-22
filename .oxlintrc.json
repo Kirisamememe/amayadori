@@ -438,7 +438,8 @@
         "project/max-exported-functions": [
           "error",
           {
-            "max": 2
+            "max": 2,
+            "limitedAfter": 200
           }
         ],
         "project/no-inline-parameter-type": "error"
