@@ -2,14 +2,15 @@
 
 理由は同じフォルダの `DECISIONS.md` にある。
 
-- lint の設定は `.oxlintrc.json`、自作のルールは `tooling/lint/rules/` の `comments/`・`tests/`・`modules/`(`tooling/lint/plugin.mjs` がまとめる)。Oxlint は `.svelte` の `<script>` も lint するが、テンプレートと `<style>` は見ない。型付きのルールは `<script>` にも流れない。
+- lint の設定は直下の `oxlint.config.ts` で、中身は `tooling/lint/config/` に分けて置く(組み込みのルール、自作と JS のプラグインのルール、`overrides`、API の制限を組み立てる関数)。設定のファイルは Node が TypeScript のまま読むので、相対 import に `.ts` を付ける。自作のルールは `tooling/lint/rules/` の `comments/`・`tests/`・`modules/`(`tooling/lint/plugin.mjs` がまとめる)。Oxlint は `.svelte` の `<script>` も lint するが、テンプレートと `<style>` は見ない。型付きのルールは `<script>` にも流れない。
+- `tooling/lint/config/` のモジュールを直したら、エディタで `Oxc: Restart oxlint Server` を実行する。エディタの Oxlint(LSP)は `oxlint.config.ts` だけを監視し、ほかのモジュールを直しても読み直さない(CLI と CI は毎回読み直す)。
 - フォルダの中身の数と名前は、lint ではなく `tooling/structure/` のテストが検査する(1ファイルずつ見る lint では、フォルダ全体を数えられない)。`src/routes/` の中では、SvelteKit の `[slug]`・`(group)` などの形も許す。
 - ファイルの長さと抑制の理由は、lint に加えて `tooling/structure/` のテストも検査する。`.svelte` は、`<script>`・マークアップ・`<style>` を合わせて数え(`tooling/structure/svelte-file.ts` が読み分ける)、`svelte-ignore` にも `--` の後の理由を求める。`<svelte:options runes={false} />` も止める。
 - `GLOSSARY.md` の「機械で探す語」に挙げた表記は、`tooling/structure/` のテストが文書・コメント・文字列(`.svelte` のマークアップを含む)から探す。コミットのメッセージからは、commit-msg の hook が探す。表記を足すときは、別の概念を指す正しい文まで落とさないかを確かめ、落としそうな文を `tooling/structure/__tests__/repository.test.ts` の例に足す。「機械で探す語」の表の見出しや書き方を変えるときは、`tooling/structure/glossary.ts` も合わせて直す。
 - ほかのリポジトリの名前は、`tooling/structure/` のテストが、リポジトリの全ファイル(パスと中身)から探す。コミットのときは、git の hook が、ステージしたファイル(パスと中身)とコミットのメッセージからも探す。名前の一覧は、メインの checkout の `.private/other-repositories.txt` に置き、コミットしない(`.private/` は `.gitignore` にある)。worktree からは `git rev-parse --git-common-dir` でたどる。1行に1つの名前を書き、空行と `#` で始まる行は読まない。大文字と小文字は区別しない。一覧が無いときは何も探さない。名前そのものは、コミットするファイルに書かない。
 - `tooling/lint/jsdoc-type-plugin.mjs` は eslint-plugin-jsdoc を別の名前で読み込むだけのファイル。`require-jsdoc` を「export する関数と型」と「型の各プロパティ」の2通りの設定で同時に使うため。
-- ルールを足したり外したり変えたりしたら、`tooling/lint/fixtures/` の `valid/` と `invalid/` の、ルールの分類ごとのフォルダに fixture を足し、`tooling/lint/__tests__/` の、ルールの分類に合うテストのファイルで確かめる(lint の実行は `tooling/lint/fixture-lint.ts` にまとめてある)。`src/` だけに掛かるルールの fixture は、`src/lib/` のように同じパスを再現したフォルダに置く。`.svelte` の fixture は `svelte/` に置き、Svelte のコンパイラの警告が出ない形で書く(svelte-check が fixture も検査するため)。理由は `tooling/DECISIONS.md` に書く。
-- fixtures はどの tsconfig にも入れず、`oxlint.fixtures.config.mjs` で型を使わずに検査する。型付きのルールは fixture では確かめられない。`bun test` は fixtures を実行しない(`bunfig.toml` と、package.json の `test:unit`)。
+- ルールを足したり外したり変えたりしたら、`tooling/lint/fixtures/` の `valid/` と `invalid/` の、ルールの分類ごとのフォルダに fixture を足し、`tooling/lint/__tests__/` の、ルールの分類に合うテストのファイルで確かめる(lint の実行は `tooling/lint/fixture-lint.ts` にまとめてある)。`src/` や設定のファイルだけに掛かるルールの fixture は、`src/lib/`・`tooling/lint/config/` のように同じパスを再現したフォルダに置く。`.svelte` の fixture は `svelte/` に置き、Svelte のコンパイラの警告が出ない形で書く(svelte-check が fixture も検査するため)。理由は `tooling/DECISIONS.md` に書く。
+- fixtures はどの tsconfig にも入れず、`oxlint.fixtures.config.ts`(直下の設定から型付きの lint を外したもの)で検査する。型付きのルールは fixture では確かめられない。`bun test` は fixtures を実行しない(`bunfig.toml` と、package.json の `test:unit`)。
 - 型付きのルールは tsrs で動く。型エラーの判定は svelte-check(中で TS 7.1 の `tsc` を流す)だけで行う。tsrs で困ったら、ユーザーに報告する。`oxlint-tsgolint` に入れ替えると、TS 7.0 と 7.1 の型検査器の食い違いがそのまま残るので、入れ替えるかはユーザーと決める。
 - TypeScript の検査と lint のルールがぶつかったら、TypeScript の方を取り、lint のルールを外すか変える。外したら、理由を `tooling/DECISIONS.md` に書く。
 - コンポーネントのテストのための preload と `render` は `tooling/svelte-test/` にある。`*.svelte.test.ts` だけを、ブラウザの条件を付けて流す(package.json の `test:components`)。

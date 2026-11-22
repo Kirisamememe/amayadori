@@ -50,7 +50,7 @@ tsrs はまだ prerelease なので、型エラーの判定は svelte-check(中�
 - `--tsgo` は、tsconfig の `exclude` を見ずに、リポジトリの全部の `.svelte` に Svelte のコンパイラの警告を出す(`--ignore` は `--tsconfig` と一緒に使えない)。lint の fixture の `.svelte` も検査されるので、fixture は Svelte の警告が出ない形で書く。
 - `--fail-on-warnings` で、Svelte のコンパイラの警告(アクセシビリティなど)も止める。
 - tsconfig は、SvelteKit が書き出す `$app/tsconfig` を extends し、strict の外にある検査も全部入れる。型を消すだけで実行できる構文に限る(`erasableSyntaxOnly`)。`$app/tsconfig` は `svelte-kit sync` が `node_modules/$app` に書くので、`bun install` の `prepare` と `bun run typecheck` で sync を流す。
-- `$app/tsconfig` は `checkJs` を有効にするが、このリポジトリでは切る。tsconfig には、型付きの lint が型を引けるよう `oxlint.fixtures.config.mjs` を入れているが、型の注釈を持たない JS なので、検査すると暗黙の `any` で落ちる。
+- 相対 import に `.ts` を付けることを許す(`allowImportingTsExtensions`)。Oxlint の設定のファイルは Node が TypeScript のまま読み、Node は拡張子の無い相対 import を解決しないため(`tooling/DECISIONS.md` の「lint の設定」)。ほかのファイルでは、lint の `import/extensions` が `.ts` を止める。
 
 ## SvelteKit の設定
 
