@@ -21,7 +21,8 @@
   - 関数を export する `.ts` に、隣のテストを求めるルール:`.svelte` のテンプレートは Oxlint から見えないので、コンポーネントに当てられない。ロジックの `.ts` だけに掛けるかは、コードが増えてから決める。
 - **TSDoc のタグの検査**(eslint-plugin-jsdoc):`@param` の名前が引数と合うこと(`check-param-names`)、1つでも書いたら全部の引数に書くこと(`require-param`)、何も返さない関数に `@returns` を書かないこと(`require-returns-check`)、タグに型を書かないこと(`no-types`。型は TypeScript が持つ)。
 - **使える API の制限**
-  - `src/` では、`bun`・`bun:*`(`bun:test` を除く)・`node:*` の import と、`Bun` のグローバル・`globalThis.Bun` を禁止する。`src/` には、ブラウザに届くコードと、サーバー側のコードが混ざる。サーバー側のコードも Web 標準で書けば、ブラウザに届くコードと書き方がそろい、adapter を替えても動く。
+  - `src/` では、`bun`・`bun:*`(`bun:test` を除く)・`node:*` の import と、`Bun` のグローバル・`globalThis.Bun` を禁止する。`src/` には、ブラウザに届くコードと、サーバー側のコードが混ざる。サーバー側のコードも Web 標準で書けば、ブラウザに届くコードと書き方がそろい、adapter を替えても動く。`node:fs/promises` のようなサブパスも止める(`node:*` だけではサブパスが pattern をすり抜けた。tsconfig は `src/` にも Bun の型を入れているので、型検査では止まらない)。
+  - `src/` のテスト(`src/**/__tests__/`)では、Bun と Node の import とグローバルを許す。テストは Bun で動き、ブラウザにもサーバー側のコードにも入らないので、上の目的に当たらない。
   - `console`(ログの出し方は、まだ決めていない)、`process.env`(環境変数は `src/env.ts` で定義し、`$app/env/private` から読む)、引数のプロパティの書き換えを禁止する。
 - **足したルール**:`no-unnecessary-condition`(要らない `?.` や条件)、`no-abusive-eslint-disable`(ルールを指定しない抑制)。
   - `typescript/return-await`(`in-try-catch`):`try`・`finally` の中と `await using` の後で、`await` を省いた `return` に診断を出す。省くと、返した処理が終わる前に後始末が走る。型は同じ `Promise` なので型検査では止まらない。
