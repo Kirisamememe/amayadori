@@ -32,6 +32,7 @@ export type SourceFile = {
   readonly text: string;
 };
 
+const BOM = /^\uFEFF/v;
 const DIVIDER_LINE = /^\s*-{10,}\s*$/v;
 const HAS_WORD = /[\p{L}\p{N}]/v;
 
@@ -194,7 +195,12 @@ const checkSvelteFile = (text: string): string[] => {
 };
 
 /** ソースのファイル1つについて、抑制できない約束の違反を集める。 */
-export const checkSourceFile = ({ path, text }: SourceFile): string[] => {
+export const checkSourceFile = ({
+  path,
+  text: source,
+}: SourceFile): string[] => {
+  const text = source.replace(BOM, "");
+
   if (path.endsWith(".svelte")) {
     return checkSvelteFile(text);
   }
