@@ -19,12 +19,26 @@ jobs:
     timeout-minutes: 15
     env:
       ANALEMMA_INTERNAL_URL: http://127.0.0.1:8788
+    defaults:
+      run:
+        working-directory: amayadori
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          path: amayadori
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Kirisamememe/analemma
+          ref: main
+          path: analemma
           persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version-file: package.json
+          bun-version-file: amayadori/package.json
+      - run: bun install --frozen-lockfile
+        working-directory: analemma
+      - run: bun run build
+        working-directory: analemma/packages/client
       - run: bun install --frozen-lockfile
       - run: bun run check
