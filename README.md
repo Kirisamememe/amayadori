@@ -12,7 +12,8 @@ src/
   lib/
     server/
       analemma/           Analemma の公開 API を呼ぶもの(サーバー側だけ)
-      kinds/              固定ページの種類の定義(client が入ってから作る)
+      fixed-pages/        固定ページの一覧と、ページを描く項目を取るもの
+      kinds/              固定ページの種類の定義
 tooling/                  lint の自作のルール・検査・git の hook・CI とレビューのスクリプト
 ```
 
@@ -22,7 +23,13 @@ tooling/                  lint の自作のルール・検査・git の hook・C
 
 ## 使い方
 
-Bun 1.4 と Node.js 24 以上が要る。svelte-check は Node で動き、Oxlint は TypeScript で書いた設定(`oxlint.config.ts`)を Node の型消去で読む。エディタの Oxc の拡張が別の Node を使うときは、拡張の設定 `oxc.path.node` で Node を指定する。
+Bun 1.4 と Node.js 24 以上が要る。Analemma の client は npm に公開する前なので、このリポジトリの隣(`../analemma`)に Analemma を checkout し、client をビルドしておく(`DECISIONS.md` の「client の入れ方(仮)」)。
+
+```bash
+bun install --cwd ../analemma && bun run --cwd ../analemma/packages/client build
+```
+
+svelte-check は Node で動き、Oxlint は TypeScript で書いた設定(`oxlint.config.ts`)を Node の型消去で読む。エディタの Oxc の拡張が別の Node を使うときは、拡張の設定 `oxc.path.node` で Node を指定する。
 
 ```bash
 bun install
@@ -32,22 +39,32 @@ bun install
 cp .env.example .env
 ```
 
-| コマンド           | すること                                                                 |
-| ------------------ | ------------------------------------------------------------------------ |
-| `bun run dev`      | 開発のサーバーを動かす                                                   |
-| `bun run build`    | 本番のビルドを `build/` に出す                                           |
-| `bun run start`    | ビルドした物を Bun で動かす(`PORT`・`HOST` で待ち受ける所を変えられる)   |
-| `bun run check`    | 整形の確認・lint・型検査・テスト・ビルドを流す。CI と同じ                |
-| `bun run format`   | 整形する                                                                 |
-| `bun run lint:fix` | lint で直せるものを直す                                                  |
-| `bun run test`     | テストを流す(コンポーネントのテストは Svelte のブラウザ版で、別に流れる) |
-| `bun run review`   | 観点ごとのレビューを1回流す(`AGENTS.md` の「レビュー」)                  |
+| コマンド             | すること                                                                 |
+| -------------------- | ------------------------------------------------------------------------ |
+| `bun run dev`        | 開発のサーバーを動かす                                                   |
+| `bun run build`      | 本番のビルドを `build/` に出す                                           |
+| `bun run start`      | ビルドした物を Bun で動かす(`PORT`・`HOST` で待ち受ける所を変えられる)   |
+| `bun run kinds:push` | 固定ページの種類の定義を Analemma に送る(デプロイのときに流す)           |
+| `bun run check`      | 整形の確認・lint・型検査・テスト・ビルドを流す。CI と同じ                |
+| `bun run format`     | 整形する                                                                 |
+| `bun run lint:fix`   | lint で直せるものを直す                                                  |
+| `bun run test`       | テストを流す(コンポーネントのテストは Svelte のブラウザ版で、別に流れる) |
+| `bun run review`     | 観点ごとのレビューを1回流す(`AGENTS.md` の「レビュー」)                  |
 
 ## 環境変数
 
-| 名前                    | 中身                                                                                      |
-| ----------------------- | ----------------------------------------------------------------------------------------- |
-| `ANALEMMA_INTERNAL_URL` | Analemma の内部用のポートの URL(例:`http://127.0.0.1:8788`)。起動とビルドのときに検証する |
+| 名前                    | 中身                                                                                                                        |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `ANALEMMA_INTERNAL_URL` | Analemma の内部用のポートの URL(例:`http://127.0.0.1:8788`)。起動とビルドのときに検証する。`kinds:push` も、この URL に送る |
+| `ANALEMMA_DEPLOY_TOKEN` | Analemma の管理画面で発行したデプロイ用のトークン。`kinds:push` だけが読む。`.env` に書かず、デプロイを流すときにだけ渡す   |
+
+## デプロイの順
+
+本番の置き場所とデプロイの手順は、まだ決めていない。今は、次の順で手元で試せる(Analemma の README の「本番の形で試す」)。
+
+1. `bun run build` でビルドする。
+2. `ANALEMMA_DEPLOY_TOKEN` を渡して `bun run kinds:push` を流す。0 で終わらなければ、ここで止める(古いビルドが動いたまま残る)。
+3. 動いているサーバーを止め、`bun run start` で新しいビルドを動かす。
 
 ## コミット
 
