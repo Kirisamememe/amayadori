@@ -70,7 +70,7 @@ export const buildPrompt = ({
   [
     `# レビューの依頼:「${perspective.label}」の観点`,
     "",
-    `個人サイトの公開サイト「Amayadori」(SvelteKit。コンテンツはヘッドレス CMS の Analemma から取る)のリポジトリで、ブランチ ${code(head)}(コミット ${code(headCommit)})の変更を、${code(base)}(コミット ${code(baseCommit)})と比べて、「${perspective.label}」の観点だけでレビューする。`,
+    `個人サイト(公開サイト)の「Amayadori」(SvelteKit。コンテンツはヘッドレス CMS の Analemma から取る)のリポジトリで、ブランチ ${code(head)}(コミット ${code(headCommit)})の変更を、${code(base)}(コミット ${code(baseCommit)})と比べて、「${perspective.label}」の観点だけでレビューする。`,
     "",
     "## 読むもの",
     "",

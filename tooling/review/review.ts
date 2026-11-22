@@ -164,7 +164,7 @@ const review = ({ base, head, perspective }: ReviewRequest): number => {
 
   if (next._tag === "Exhausted") {
     report(
-      `${head} は、「${perspective.label}」の観点で ${String(next.rounds)} 回レビューした。残った指摘は「割り切ったこと」に書くか、ユーザーに聞いてください(結果は ${results})。`,
+      `${head} は、「${perspective.label}」の観点で ${String(next.rounds)} 回レビューした。残った指摘は、退けるか、「割り切ったこと」に書くか、ユーザーに聞いてください(結果は ${results})。`,
     );
 
     return 1;

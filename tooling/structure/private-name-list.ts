@@ -6,7 +6,7 @@ import { readPrivateNames } from "./private-names";
 
 const PRIVATE_NAME_LIST = [".private", "other-repositories.txt"];
 
-/** worktree の中からでも、メインの checkout の直下を返す。 */
+/** メインの checkout の直下のパスを返す。 */
 export const findMainCheckout = (repoRoot: string): string => {
   const commonDir = spawnSync(
     "git",
