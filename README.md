@@ -12,7 +12,7 @@ src/
   lib/
     server/
       analemma/           Analemma の公開 API を呼ぶもの(サーバー側だけ)
-      fixed-pages/        固定ページの一覧と、ページを描く項目を取るもの
+      fixed-pages/        固定ページの一覧と、ページを描くための値を取るもの
       kinds/              固定ページの種類の定義
 tooling/                  lint の自作のルール・検査・git の hook・CI とレビューのスクリプト
 ```

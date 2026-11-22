@@ -10,7 +10,7 @@ export type FixedPageLink = {
   readonly title: string;
 };
 
-/** 自己紹介のページを描くために、ブラウザへ返す項目。 */
+/** 自己紹介のページを描くために、ブラウザへ返す値。 */
 export type AboutView = {
   /** 種類の名前。 */
   readonly kind: "about";
@@ -24,7 +24,7 @@ export type AboutView = {
   readonly website: string | undefined;
 };
 
-/** メモのページを描くために、ブラウザへ返す項目。 */
+/** メモのページを描くために、ブラウザへ返す値。 */
 export type NoteView = {
   /** 種類の名前。 */
   readonly kind: "note";
@@ -34,7 +34,7 @@ export type NoteView = {
   readonly paragraphs: readonly string[];
 };
 
-/** 固定ページを描くために、ブラウザへ返す項目。 */
+/** 固定ページを描くために、ブラウザへ返す値。 */
 export type FixedPageView = AboutView | NoteView;
 
 const KIND_NAMES = new Set<string>(kinds.map(({ name }) => name));
@@ -65,7 +65,7 @@ export type FixedPageAddress = {
   readonly slug: string;
 };
 
-/** 種類と slug で引いた公開している固定ページの、描くのに要る項目を返す。 */
+/** 種類と slug で引いた公開している固定ページの、描くのに要る値を返す。 */
 export const loadFixedPageView = async (
   cms: AnalemmaClient,
   { kind, slug }: FixedPageAddress,

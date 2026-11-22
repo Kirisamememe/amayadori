@@ -15,7 +15,7 @@ type StoredPage = {
 };
 
 type FakeCms = {
-  /** 作り物の公開 API につないだ client。 */
+  /** テストのために作った公開 API につないだ client。 */
   readonly cms: AnalemmaClient;
   /** 届いたリクエストのパス。 */
   readonly requests: readonly string[];
@@ -113,8 +113,8 @@ describe("固定ページへのリンク", () => {
   });
 });
 
-describe("固定ページを描く項目", () => {
-  test("自己紹介のページから、描くのに要る項目だけを返すこと", async () => {
+describe("固定ページを描くための値", () => {
+  test("自己紹介のページから、描くのに要るプロパティだけを返すこと", async () => {
     const { cms } = createFakeCms([ABOUT]);
 
     expect(
@@ -128,7 +128,7 @@ describe("固定ページを描く項目", () => {
     });
   });
 
-  test("省ける項目が無い自己紹介のページでは、段落を空にし、Web サイトを undefined にすること", async () => {
+  test("本文と Web サイトの無い自己紹介のページでは、段落を空にし、Web サイトを undefined にすること", async () => {
     const { cms } = createFakeCms([
       { ...ABOUT, content: { headline: "こんにちは" } },
     ]);
@@ -144,7 +144,7 @@ describe("固定ページを描く項目", () => {
     });
   });
 
-  test("メモのページから、描くのに要る項目だけを返すこと", async () => {
+  test("メモのページから、描くのに要るプロパティだけを返すこと", async () => {
     const { cms } = createFakeCms([NOTE]);
 
     expect(
