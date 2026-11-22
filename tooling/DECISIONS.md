@@ -12,7 +12,7 @@
   - `require-disable-reason`:lint の抑制に、ルールの名前と `--` の後の理由を求める。ルールの名前と説明の区切りは、Oxlint と同じ読み方にする。抑制できないルール(`file-length-limit`・`no-standalone-comment`・このルール自身)の抑制を止め、`max-code-lines` の抑制は1行目の `// oxlint-disable` の形だけを許す。
   - `no-focused-test`:`test.only`・`describe.skip`・`test.todo`・`test.if` などを禁止する。
   - `test-location`:テストのファイルを `__tests__` の直下に置かせ、`__tests__` にはテストのファイルだけを置かせ、`__tests__` の中にフォルダを作らせない。
-  - `max-exported-functions`:コードの行数(空行とコメントだけの行を除く)が200行を超えるファイルは、export できる関数を2つまでにする(型は数えない)。200行以下なら、数は問わない(ユーザーが決めた。理由は直下の `DECISIONS.md` の「ファイルの長さ」)。境目の200行は、分割の見出しを使える行数(`no-standalone-comment` の `dividerAllowedAfter`)と同じ値にする。数えるのは、arrow function・function 宣言・function 式だけで、呼び出しの結果(関数を返す関数の戻り値など)は数えない。`src/lib/` と `tooling/` にだけ掛ける。SvelteKit の route のファイル(`+page.server.ts` など)と `hooks.server.ts` は、SvelteKit が決めた名前の関数(`load`・`handle`・`handleError`・`init` など)を export するので、数をこちらで決められない。
+  - `max-exported-functions`:コードの行数(空行とコメントだけの行を除く)が200行を超えるファイルは、export できる関数を2つまでにする(型は数えない)。200行以下なら、数は問わない(ユーザーが決めた。理由は直下の `DECISIONS.md` の「ファイルの長さ」)。境目の200行は、分割の見出しを使える行数(`no-standalone-comment` の `dividerAllowedAfter`)と同じ値にする。数えるのは、アロー関数・関数宣言・関数式だけで、呼び出しの結果(関数を返す関数の戻り値など)は数えない。`src/lib/` と `tooling/` にだけ掛ける。SvelteKit の route のファイル(`+page.server.ts` など)と `hooks.server.ts` は、SvelteKit が決めた名前の関数(`load`・`handle`・`handleError`・`init` など)を export するので、数をこちらで決められない。
   - `no-inline-parameter-type`:関数の引数に、インラインのオブジェクト型を書かせず、名前付きの型にさせる。`max-exported-functions` と同じ範囲に掛ける。
   - `no-dynamic-import`:`import()` による動的な import を禁止する。境界を守る `no-restricted-imports` は動的な import を見ないので、`import()` なら Bun や Node の API を、`src/` から読めてしまう。
 - **CMS のリポジトリから持ってこなかったルール**:lint の自作のルールと検査は、CMS(Analemma)のものと同じ考え方で作り、このリポジトリに合わないものは持ってこなかった。

@@ -31,7 +31,7 @@ const maxExportedFunctions = {
         "このファイルのコードは {{lines}} 行あり、関数を {{count}} 個 export しています。コードが {{limitedAfter}} 行を超えるファイルが export できる関数は {{max}} 個までです(空行とコメントだけの行と、型の export は数えない)。ファイルを分けます。",
     },
   },
-  /** コードの行数が上限を超えるファイルで、export した関数を数える。 */
+  /** コードの行数が境目を超えるファイルで、export した関数を数える。 */
   create(context) {
     if (!/\.(?:[cm]?ts|tsx)$/v.test(context.filename)) {
       return {};
