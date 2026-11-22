@@ -438,7 +438,8 @@
         "project/max-exported-functions": [
           "error",
           {
-            "max": 2
+            "max": 2,
+            "limitedAfter": 200
           }
         ],
         "project/no-inline-parameter-type": "error"
@@ -496,7 +497,7 @@
           {
             "patterns": [
               {
-                "group": ["bun", "bun:*", "!bun:test", "node:*"],
+                "group": ["bun", "bun:*", "!bun:test", "node:*", "node:*/**"],
                 "message": "Bun と Node の API は src/ では使いません。ブラウザに届くコードと、Web 標準で書くサーバーのコードの置き場所です。"
               }
             ]
@@ -517,6 +518,14 @@
             "message": "Bun と Node の API は src/ では使いません。ブラウザに届くコードと、Web 標準で書くサーバーのコードの置き場所です。"
           }
         ]
+      }
+    },
+    {
+      "files": ["**/src/**/__tests__/**"],
+      "rules": {
+        "eslint/no-restricted-imports": "off",
+        "eslint/no-restricted-globals": "off",
+        "eslint/no-restricted-properties": "off"
       }
     }
   ]

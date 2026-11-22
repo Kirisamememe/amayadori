@@ -5,14 +5,14 @@
 設定は `.oxlintrc.json`。型付きのルールは fixture では確かめられない(fixture は型を使わずに検査する)。
 
 - **自作のルール**(`tooling/lint/rules/`)
-  - `no-standalone-comment`:単独の行のコメントとブロックコメントを禁止し、行末のコメントは40文字までにする。lint への指示(`oxlint-disable` など)と `@ts-expect-error` は除く。TSDoc は宣言・型の項目・メンバーの直前にだけ書ける。分割の見出し(10本以上の `-` の罫線・見出しの行・罫線の3行)は、コードが200行を超えるファイルでだけ許し、400行を超えるファイルには1つ以上を求める。行数は、空行とコメントだけの行を除いて数える。見出しの行は、文字か数字を含み、lint への指示ではないものに限り、40文字までにする。必須の条件を満たすのは、後ろにコードが続く見出しだけ。改行は LF・CRLF・CR・U+2028・U+2029 のどれでも1行と数える。TSDoc と宣言のあいだに見出しを挟むと、宣言の直前に無い TSDoc の診断を出す。
+  - `no-standalone-comment`:単独の行のコメントとブロックコメントを禁止し、行末のコメントは40文字までにする。lint への指示(`oxlint-disable` など)と `@ts-expect-error` は除く。TSDoc は宣言・型のプロパティ・メンバーの直前にだけ書ける。分割の見出し(10本以上の `-` の罫線・見出しの行・罫線の3行)は、コードが200行を超えるファイルでだけ許し、400行を超えるファイルには1つ以上を求める。行数は、空行とコメントだけの行を除いて数える。見出しの行は、文字か数字を含み、lint への指示ではないものに限り、40文字までにする。必須の条件を満たすのは、後ろにコードが続く見出しだけ。改行は LF・CRLF・CR・U+2028・U+2029 のどれでも1行と数える。TSDoc と宣言のあいだに見出しを挟むと、宣言の直前に無い TSDoc の診断を出す。
   - `tsdoc-role-only`:TSDoc の説明とタグを、それぞれ1行・1文・60文字までにし、条件・例・補足・理由の言い回しと、`@param`・`@returns`・`@deprecated` 以外のタグを禁止する。言い回しは正規表現で見る(「割り切ったこと」)。バッククォートで囲んだ部分は言い回しの検査から外す。
   - `no-markup-test`:テストで、test id による検索、DOM のたどり方(`querySelector` など)、クラス名や HTML の中身、スナップショットを禁止する。
   - `max-code-lines`・`file-length-limit`:ファイルのコードの行数(空行とコメントだけの行を除く)に上限を設ける。同じ実装を、400行(`max-code-lines`。1行目に理由付きで抑制できる)と800行(`file-length-limit`。抑制できない)の2つの名前で使う。Oxlint の `eslint/max-lines` は、複数行のコメントや CR だけの改行で数え方が食い違ったので使わない。
   - `require-disable-reason`:lint の抑制に、ルールの名前と `--` の後の理由を求める。ルールの名前と説明の区切りは、Oxlint と同じ読み方にする。抑制できないルール(`file-length-limit`・`no-standalone-comment`・このルール自身)の抑制を止め、`max-code-lines` の抑制は1行目の `// oxlint-disable` の形だけを許す。
   - `no-focused-test`:`test.only`・`describe.skip`・`test.todo`・`test.if` などを禁止する。
   - `test-location`:テストのファイルを `__tests__` の直下に置かせ、`__tests__` にはテストのファイルだけを置かせ、`__tests__` の中にフォルダを作らせない。
-  - `max-exported-functions`:1つのファイルが export できる関数を2つまでにする(型は数えない)。`src/lib/` と `tooling/` にだけ掛ける。SvelteKit の route のファイル(`+page.server.ts` など)と `hooks.server.ts` は、SvelteKit が決めた名前の関数(`load`・`handle`・`handleError`・`init` など)を export するので、数をこちらで決められない。
+  - `max-exported-functions`:コードの行数(空行とコメントだけの行を除く)が200行を超えるファイルは、export できる関数を2つまでにする(型は数えない)。200行以下なら、数は問わない(ユーザーが決めた。理由は直下の `DECISIONS.md` の「ファイルの長さ」)。境目の200行は、分割の見出しを使える行数(`no-standalone-comment` の `dividerAllowedAfter`)と同じ値にする。数えるのは、アロー関数・関数宣言・関数式だけで、呼び出しの結果(関数を返す関数の戻り値など)は数えない。`src/lib/` と `tooling/` にだけ掛ける。SvelteKit の route のファイル(`+page.server.ts` など)と `hooks.server.ts` は、SvelteKit が決めた名前の関数(`load`・`handle`・`handleError`・`init` など)を export するので、数をこちらで決められない。
   - `no-inline-parameter-type`:関数の引数に、インラインのオブジェクト型を書かせず、名前付きの型にさせる。`max-exported-functions` と同じ範囲に掛ける。
   - `no-dynamic-import`:`import()` による動的な import を禁止する。境界を守る `no-restricted-imports` は動的な import を見ないので、`import()` なら Bun や Node の API を、`src/` から読めてしまう。
 - **CMS のリポジトリから持ってこなかったルール**:lint の自作のルールと検査は、CMS(Analemma)のものと同じ考え方で作り、このリポジトリに合わないものは持ってこなかった。
@@ -21,16 +21,17 @@
   - 関数を export する `.ts` に、隣のテストを求めるルール:`.svelte` のテンプレートは Oxlint から見えないので、コンポーネントに当てられない。ロジックの `.ts` だけに掛けるかは、コードが増えてから決める。
 - **TSDoc のタグの検査**(eslint-plugin-jsdoc):`@param` の名前が引数と合うこと(`check-param-names`)、1つでも書いたら全部の引数に書くこと(`require-param`)、何も返さない関数に `@returns` を書かないこと(`require-returns-check`)、タグに型を書かないこと(`no-types`。型は TypeScript が持つ)。
 - **使える API の制限**
-  - `src/` では、`bun`・`bun:*`(`bun:test` を除く)・`node:*` の import と、`Bun` のグローバル・`globalThis.Bun` を禁止する。`src/` には、ブラウザに届くコードと、サーバー側のコードが混ざる。サーバー側のコードも Web 標準で書けば、ブラウザに届くコードと書き方がそろい、adapter を替えても動く。
+  - `src/` では、`bun`・`bun:*`(`bun:test` を除く)・`node:*` の import と、`Bun` のグローバル・`globalThis.Bun` を禁止する。`src/` には、ブラウザに届くコードと、サーバー側のコードが混ざる。サーバー側のコードも Web 標準で書けば、ブラウザに届くコードと書き方がそろい、adapter を替えても動く。`node:fs/promises` のようなサブパスも止める(`node:*` だけではサブパスが pattern をすり抜けた。tsconfig は `src/` にも Bun の型を入れているので、型検査では止まらない)。
+  - `src/` のテスト(`src/**/__tests__/`)では、Bun と Node の import とグローバルを許す。テストは Bun で動き、ブラウザにもサーバー側のコードにも入らないので、上の目的に当たらない。
   - `console`(ログの出し方は、まだ決めていない)、`process.env`(環境変数は `src/env.ts` で定義し、`$app/env/private` から読む)、引数のプロパティの書き換えを禁止する。
 - **足したルール**:`no-unnecessary-condition`(要らない `?.` や条件)、`no-abusive-eslint-disable`(ルールを指定しない抑制)。
   - `typescript/return-await`(`in-try-catch`):`try`・`finally` の中と `await using` の後で、`await` を省いた `return` に診断を出す。省くと、返した処理が終わる前に後始末が走る。型は同じ `Promise` なので型検査では止まらない。
 - **変えた設定**
   - `no-underscore-dangle`:`_tag` だけ許す。想定内の失敗を `_tag` 付きの判別共用体で表すため。
-  - `switch-exhaustiveness-check`:網羅している switch に `default` を書けないようにし、判別共用体でない値の switch には `default` を求める。`default` があると、種類を足したときに扱い忘れが見つからない。
+  - `switch-exhaustiveness-check`:網羅している switch に `default` を書けないようにし、判別共用体でない値の switch には `default` を求める。`default` があると、`_tag` の値を足したときに扱い忘れが見つからない。
   - `require-unicode-regexp`:正規表現に `v` フラグを求める。和文を扱うので、サロゲートペアや Unicode のプロパティを正しく扱える必要がある。
   - `no-await-in-loop`:有効にする。ループの中の直列の I/O(N+1)を見つける。
-  - `consistent-type-assertions`:オブジェクトリテラルへの `as` を禁止する。`as` を付けると余計な項目の検査が効かなくなり、キーの綴り間違いが素通りする。
+  - `consistent-type-assertions`:オブジェクトリテラルへの `as` を禁止する。`as` を付けると余計なプロパティの検査が効かなくなり、キーの綴り間違いが素通りする。
   - `no-warning-comments`:探す語を `FIXME`・`XXX` だけにし、`TODO` は書けるようにする。直す条件がはっきりした「後で戻すこと」を、その場に残すため。
   - `no-unused-vars`:`await using` で受けた変数は、使っていなくても診断を出さない(`ignoreUsingDeclarations`)。
   - `import/extensions`:`.svelte` の import には拡張子を求める。`#lib/*.svelte` と `#lib/*` の対応を分けている(直下の `DECISIONS.md` の「SvelteKit の設定」)ので、拡張子が無いと `.ts` を探してしまう。
@@ -40,8 +41,8 @@
 - **テストで緩めるルール**:テストは製品のコードより lint を緩めてよい。テストの書き方とぶつかる一般のルールは、テストのファイルの `overrides` で外し、テストを曲げない。テストのためのルール(`no-focused-test`・`no-markup-test`・`test-location`)と、抑制できないルールは緩めない。
   - `no-non-null-assertion`:テストでは、あると分かっている値を読む場面が多い。無ければテストが落ちるので、それで足りる。
   - `no-await-in-loop`:テストでは、順に待つこと自体を確かめたい場面がある。
-  - `consistent-type-assertions`:項目の一部だけを持つ作り物を `as` で作れるようにする。
-  - `unicorn/prefer-type-error`:テストの中で throw する値の種類は、テストの都合で決める。
+  - `consistent-type-assertions`:プロパティの一部だけを持つ作り物を `as` で作れるようにする。
+  - `unicorn/prefer-type-error`:テストの中で throw する値の型は、テストの都合で決める。
 - **自作のルールのファイル(`tooling/lint/**/*.mjs`)で変えるルール**
   - `import/extensions`:`.mjs` の拡張子を付ける。Node の ES モジュールは、相対 import に拡張子が無いと読み込めない。
   - `typescript/no-unsafe-*` と `strict-boolean-expressions` を外す。Oxlint は JS プラグインへ型の無い構文木を渡すので、型付きのルールを当てても意味が無い。
@@ -54,8 +55,8 @@
   - 同じ中身のルールが2系統あるものは、型付きの方か片方だけを残す(`require-await`・`prefer-promise-reject-errors`・`no-implied-eval`・`prefer-includes`・`prefer-string-starts-ends-with`・`no-lonely-if`・`no-negated-condition`)。1つの違反が2回報告されるのを防ぐ。
 - **import の並び**:oxfmt の `sortImports` に任せる。並びは整形の仕事で、保存のたびに直る。グループは、外のパッケージ、SvelteKit のモジュール(`$app/*`)、このリポジトリの `#lib/*`、相対パスの順。`.svelte` の `<script>` の中も、oxfmt が同じく並べる。
 - **ファイル名**:`unicorn/filename-case` で kebab-case を求める。SvelteKit の `+page.svelte` や `hooks.server.ts` は、診断を出さない(手で確かめた)。
-- **fixture のテスト**:`tooling/lint/__tests__/` に、ルールの種類ごとのテストのファイルを置く。lint の実行と結果の読み取りは `tooling/lint/fixture-lint.ts` にまとめる。正常系は、診断が0件であることに加えて、fixture を全部 lint したことも確かめる。
-- **fixture**:ルールの種類ごとのフォルダ(`comments/`・`tsdoc/`・`jsdoc/`・`functions/`・`imports/`・`syntax/`・`tests/`・`svelte/`)に分け、`src/` だけに掛かるルールの fixture は、`src/lib/` のように同じパスを再現したフォルダに置く。`tooling/lint/fixtures/` は `bun test` の対象から外す。
+- **fixture のテスト**:`tooling/lint/__tests__/` に、ルールの分類ごとのテストのファイルを置く。lint の実行と結果の読み取りは `tooling/lint/fixture-lint.ts` にまとめる。正常系は、診断が0件であることに加えて、fixture を全部 lint したことも確かめる。
+- **fixture**:ルールの分類ごとのフォルダ(`comments/`・`tsdoc/`・`jsdoc/`・`functions/`・`imports/`・`syntax/`・`tests/`・`svelte/`)に分け、`src/` だけに掛かるルールの fixture は、`src/lib/` のように同じパスを再現したフォルダに置く。`tooling/lint/fixtures/` は `bun test` の対象から外す。
   - `.svelte` の fixture は、Svelte のコンパイラの警告が出ない形で書く。svelte-check の `--tsgo` は、tsconfig の `exclude` を見ずに、全部の `.svelte` にコンパイラの警告を出す(直下の `DECISIONS.md` の「TypeScript」)。
 
 ## Svelte のファイルの lint と整形
@@ -187,15 +188,15 @@ git の `core.hooksPath` を、コミットしたフォルダ `tooling/git-hooks
 GitHub Actions の workflow を、`.github/workflows/` に2つ置く。job の名前(`check`・`commit-messages`)は、main の ruleset で、通ることを必須にする check として登録した名前なので、変えるときは ruleset も直す。
 
 - **`check`**(`check.yml`):PR と main への push で、`bun install --frozen-lockfile` と `bun run check` を流す。手元と同じ手順で、ビルドまで流す。ビルドが検証する `ANALEMMA_INTERNAL_URL` は、job の `env` で渡す(秘密でない、手元の既定と同じ値。直下の `DECISIONS.md` の「環境変数」)。
-- **`commit-messages`**(`commit-messages.yml`):PR で、PR のコミットのメッセージと、PR のタイトルを確かめる。main は「Squash and merge」だけにする予定で、main に残るのはタイトルになるため。
+- **`commit-messages`**(`commit-messages.yml`):PR で、PR のコミットのメッセージと、PR のタイトルを確かめる。今のリポジトリの設定では、merge の方法は squash だけで、main に残るコミットの1行目は PR のタイトルになるため。
 - **workflow を分ける**:`commit-messages` は、PR のタイトルを直したとき(`edited`)にも流す必要がある。`check` を同じ workflow に置くと、タイトルや本文を直すたびに `check` も流れる。job の `if` で `check` を飛ばすと、飛ばした job は通ったものとして扱われ、落ちていた `check` が、タイトルを直しただけで通ったことになる。同じ理由で、本文だけを直したときも `commit-messages` を飛ばさない。
 
 ### メッセージの検査
 
 - **同じ検査を2か所に書かない**:`tooling/ci/check-pull-request-messages.ts` は、メッセージを1件ずつ一時ファイルに書き、commit-msg の hook のスクリプト(`tooling/git-hooks/commit-msg.ts`)にそのまま渡す。hook の検査を変えれば、CI の検査も変わる。`#` で始まる行の扱いも hook と同じになる。
 - **範囲は PR のコミットだけ**:`git rev-list` で、`pull_request` イベントが渡す base の SHA から head の SHA までをたどる。main に入ったコミットは、入るときに確かめてある。検査を厳しくしても、過去のコミットで PR が落ちないようにするため。履歴をたどるので、checkout は `fetch-depth: 0` にする。
-- **PR のタイトルは、main に残る1行目として確かめる**:「Squash and merge」は、タイトルの後ろに ` (#番号)` を足して1行目にする。確かめるのは番号を足した1行目なので、半角に換算した幅は番号まで含めて数える。
-- **PR の本文は確かめない**:main に残るのはタイトルだけにする前提(squash のコミットのメッセージを、PR のタイトルだけにする設定)。本文も main に残す設定にするなら、本文も確かめる。
+- **PR のタイトルは、main に残る1行目として確かめる**:squash は、タイトルの後ろに ` (#番号)` を足して1行目にする(リポジトリの設定で、squash のコミットの1行目を PR のタイトルにしてある)。確かめるのは番号を足した1行目なので、半角に換算した幅は番号まで含めて数える。
+- **PR の本文は確かめない**:リポジトリの設定で、squash のコミットの本文を空にしてあり、PR の本文は main に残らない。本文も残す設定にするなら、本文も確かめる。
 - **タイトルは環境変数と標準入力で渡す**:`${{ }}` で `run` に直接書くと、タイトルがシェルのスクリプトの一部として展開され、タイトルに書いたコマンドが流れる(script injection)。引数でなく標準入力で渡すのは、`-` で始まるタイトルを option と読ませないため。
 - **ほかのリポジトリの名前は探さない**:CI には名前の一覧が無い(一覧は手元にだけ置くため)。名前は、手元の `bun run check` とコミットのときの hook が探す。
 
@@ -217,14 +218,13 @@ GitHub Actions の workflow を、`.github/workflows/` に2つ置く。job の�
 - **`-m` で書いたメッセージの `#` の行**:git は、エディタを開かないとき(`-m`・`-F`)はコメントを消さないが、commit-msg の検査は `#` で始まる行を読まない。エディタで書いたときの git のコメントと見分けられないため。commitlint も同じ扱いをする。`core.commentChar` を `auto` にしたときも、`#` として扱う。どちらも、普通の使い方では起きないので受け入れる。
 - **commitlint の既定の除外**:commitlint は、本文のどこかに `Merge branch …` のような行があるメッセージや、`1.2.3` だけのメッセージを、形を確かめずに通す。普通のメッセージには現れず、通っても、名前と「機械で探す語」の検索は流れるので、受け入れる。
 - **既にある hook**:`install.ts` は、ほかの `core.hooksPath` があれば置き換える(前の値を出す)。そのため、`.git/hooks` の hook も流れなくなる。このリポジトリでは、ほかの hook を使っていない。
-- **submodule**:pre-commit は、ステージした submodule の中身を読めずに失敗し、コミットを止める。このリポジトリでは submodule を使っていない。
 - **PATH に Bun が無い環境**:hook は `bun` を PATH から探すので、PATH を引き継がない GUI の git クライアントなどでは、hook が失敗してコミットできない。黙って通すより安全なので受け入れる。
 - **PR のタイトルの句点**:確かめるのは ` (#番号)` を足した1行目なので、タイトルを `。` で終えても `subject-full-stop` では止まらない。main の1行目は番号で終わり、句点では終わらないので受け入れる。
-- **hook を通らないメッセージの中の名前**:PR のタイトルと、GitHub の画面で作ったコミット(レビューの提案の取り込みなど)のメッセージは、手元の hook を通らない。CI にも名前の一覧が無いので、ほかのリポジトリの名前は誰も探さない。一覧を CI に渡すと、一覧そのものを GitHub に預けることになり、見つけた名前も公開のログに出る。タイトルは人が書いてレビューで見るので、受け入れる。
+- **hook を通らないメッセージの中の名前**:PR のタイトルと本文、GitHub の画面で作ったコミット(レビューの提案の取り込みなど)のメッセージは、手元の hook を通らない。CI にも名前の一覧が無い。一覧を CI に渡すと、一覧そのものを GitHub に預けることになり、見つけた名前も公開のログに出る。PR はエージェントが作るので、タイトルは、作る前に手元で `tooling/ci/check-pull-request-messages.ts` に通す(直下の `AGENTS.md`)。PR の本文は、どの検査も読まない。GitHub の画面で作ったコミットのメッセージは、CI が形を確かめるが、名前は探さない。どちらも書いた人が見る。本文を手元で探す仕組みは、足さないとユーザーが決めた。
 - **CSS の文字列の中の `/*`**:`.svelte` の行数を数えるとき、`<style>` のコメントは正規表現で探すので、`content: "/*"` のような文字列をコメントの始まりと取り違える。細工した CSS でだけ起き、行数の上限を少しすり抜けるだけなので受け入れる。
 - **コンポーネントのテストの並行**:コンポーネントのテストは、1つの document を共有し、テストのたびに全部を外す。`test.concurrent` で並べると、先に終わったテストの後始末が、ほかのテストの描画まで消す。`bun test` は既定で順に流し、並行にするのはわざわざ書いたときだけなので受け入れる。
 - **テストを分ける条件**:`test:components` は、パスに `.svelte.test.ts` を含むファイルを選ぶ(`bun test` の引数は部分一致)。`.svelte.test.tsx` のような名前は両方に当たるが、Svelte では `.tsx` を使わないので受け入れる。
 - **Markdown のフェンスの端の場合**:用語集の検査は、引用(`>`)の中のフェンスや、情報文字列にバッククォートを含む不正なフェンスを、CommonMark と違う形で読む。普通の文書には現れないので受け入れる。
-- **squash の画面で書き換えたメッセージ**:「Squash and merge」の画面では、main に残るメッセージを書き換えられる。CI が確かめるのは PR のタイトルなので、書き換えた中身は誰も確かめない。merge するのはユーザーだけで、既定ではタイトルがそのまま入るので受け入れる。
+- **squash の画面で書き換えたメッセージ**:「Squash and merge」の画面では、main に残るメッセージを書き換えられる。CI が確かめるのは PR のタイトルなので、書き換えた中身は誰も確かめない。既定ではタイトルがそのまま入り、書き換えるのは画面でわざと直したときだけなので受け入れる。
 - **PR が検査そのものを変えること**:`check` と `commit-messages` は、PR のブランチの workflow と検査のコードで流れる。PR が検査を常に通る形に変えても、必須の check は通る。merge するのはユーザーだけで、レビューで見るので受け入れる。外の人の PR を受けるようになったら、検査のコードの変更にユーザーのレビューを求めるかを決める。
 - **ログの workflow command**:commitlint は、通らなかったメッセージの行をそのままログに出す。メッセージに `::warning::` のような行があると、GitHub Actions が workflow command として読みうる(確かめていない)。job の権限は読み取りだけで、秘密も渡していない。環境変数や PATH を変える command は GitHub が既定で止めているので、偽の注釈が出るくらいで済む。受け入れる。

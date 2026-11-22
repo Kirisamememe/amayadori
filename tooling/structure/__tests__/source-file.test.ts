@@ -24,6 +24,27 @@ describe("ファイルの長さ", () => {
     expect(check(["// 🌧🌧🌧🌧", codeLines(400), "// 注"])).toEqual([]);
   });
 
+  test("UTF-16 で2つの単位を使う文字のコメントがあっても、後ろにコードが続く見出しで、見出しの必須の条件を満たすこと", () => {
+    expect(
+      check([
+        EXCEPTION,
+        "export const a = 1; // 🌧🌧🌧🌧🌧🌧🌧🌧",
+        codeLines(400),
+        DIVIDER,
+        "f();",
+      ]),
+    ).toEqual([]);
+  });
+
+  test("BOM で始まるファイルでも、1行目の理由付きの抑制で、400行を超えるコードを許すこと", () => {
+    expect(
+      checkSourceFile({
+        path: "sample.ts",
+        text: `﻿${[EXCEPTION, DIVIDER, codeLines(401)].join("\n")}\n`,
+      }),
+    ).toEqual([]);
+  });
+
   test("コードが400行までなら、理由付きの抑制も見出しも要らないこと", () => {
     expect(check([codeLines(400)])).toEqual([]);
   });

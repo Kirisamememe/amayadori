@@ -55,6 +55,11 @@ describe("使える API と書き方", () => {
       rule: "eslint(no-restricted-imports)",
     },
     {
+      label: "src での Node の API のサブパスの import",
+      file: "src/lib/uses-node-subpath.ts",
+      rule: "eslint(no-restricted-imports)",
+    },
+    {
       label: "src での bun:sqlite の import",
       file: "src/lib/uses-bun-sqlite.ts",
       rule: "eslint(no-restricted-imports)",
