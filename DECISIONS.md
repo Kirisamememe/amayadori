@@ -77,7 +77,7 @@ Analemma(コンテンツを持つヘッドレス CMS)は、外部用のポート
 
 - `@analemma/client` は、まだ npm に公開していない(公開の手順は、Analemma の側でライセンスと一緒に決める)。それまでは、このリポジトリの隣(`../analemma`)に置いた Analemma の checkout の `packages/client` を、`file:` の依存でつなぐ。client の型が参照する `@analemma/contract` は、Analemma の中では workspace の依存なので、`overrides` で同じ checkout の `packages/contract` に向ける。
 - `file:` の依存は、`bun install` のときに中身を写す。client を直したら、Analemma で `bun run build` を流し直してから、このリポジトリで `bun install` を流し直す。
-- CI は、このリポジトリと Analemma の main を、同じフォルダの下に並べて checkout し、client をビルドしてから `bun install` を流す。npm に公開したら、普通の依存に替え、CI の Analemma の checkout を外す。
+- CI は、このリポジトリと、SHA で固定した Analemma の main のコミットを、同じフォルダの下に並べて checkout し、client をビルドしてから `bun install` を流す。npm に公開したら、普通の依存に替え、CI の Analemma の checkout を外す。
 
 ### 公開 API を呼ぶ
 
