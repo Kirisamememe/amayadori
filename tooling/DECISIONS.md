@@ -194,15 +194,15 @@ git の `core.hooksPath` を、コミットしたフォルダ `tooling/git-hooks
 GitHub Actions の workflow を、`.github/workflows/` に2つ置く。job の名前(`check`・`commit-messages`)は、main の ruleset で、通ることを必須にする check として登録した名前なので、変えるときは ruleset も直す。
 
 - **`check`**(`check.yml`):PR と main への push で、`bun install --frozen-lockfile` と `bun run check` を流す。手元と同じ手順で、ビルドまで流す。ビルドが検証する `ANALEMMA_INTERNAL_URL` は、job の `env` で渡す(秘密でない、手元の既定と同じ値。直下の `DECISIONS.md` の「環境変数」)。
-- **`commit-messages`**(`commit-messages.yml`):PR で、PR のコミットのメッセージと、PR のタイトルを確かめる。main は「Squash and merge」だけにする予定で、main に残るのはタイトルになるため。
+- **`commit-messages`**(`commit-messages.yml`):PR で、PR のコミットのメッセージと、PR のタイトルを確かめる。今のリポジトリの設定では、merge の方法は squash だけで、main に残るコミットの1行目は PR のタイトルになるため。
 - **workflow を分ける**:`commit-messages` は、PR のタイトルを直したとき(`edited`)にも流す必要がある。`check` を同じ workflow に置くと、タイトルや本文を直すたびに `check` も流れる。job の `if` で `check` を飛ばすと、飛ばした job は通ったものとして扱われ、落ちていた `check` が、タイトルを直しただけで通ったことになる。同じ理由で、本文だけを直したときも `commit-messages` を飛ばさない。
 
 ### メッセージの検査
 
 - **同じ検査を2か所に書かない**:`tooling/ci/check-pull-request-messages.ts` は、メッセージを1件ずつ一時ファイルに書き、commit-msg の hook のスクリプト(`tooling/git-hooks/commit-msg.ts`)にそのまま渡す。hook の検査を変えれば、CI の検査も変わる。`#` で始まる行の扱いも hook と同じになる。
 - **範囲は PR のコミットだけ**:`git rev-list` で、`pull_request` イベントが渡す base の SHA から head の SHA までをたどる。main に入ったコミットは、入るときに確かめてある。検査を厳しくしても、過去のコミットで PR が落ちないようにするため。履歴をたどるので、checkout は `fetch-depth: 0` にする。
-- **PR のタイトルは、main に残る1行目として確かめる**:「Squash and merge」は、タイトルの後ろに ` (#番号)` を足して1行目にする。確かめるのは番号を足した1行目なので、半角に換算した幅は番号まで含めて数える。
-- **PR の本文は確かめない**:main に残るのはタイトルだけにする前提(squash のコミットのメッセージを、PR のタイトルだけにする設定)。本文も main に残す設定にするなら、本文も確かめる。
+- **PR のタイトルは、main に残る1行目として確かめる**:squash は、タイトルの後ろに ` (#番号)` を足して1行目にする(リポジトリの設定で、squash のコミットの1行目を PR のタイトルにしてある)。確かめるのは番号を足した1行目なので、半角に換算した幅は番号まで含めて数える。
+- **PR の本文は確かめない**:リポジトリの設定で、squash のコミットの本文を空にしてあり、PR の本文は main に残らない。本文も残す設定にするなら、本文も確かめる。
 - **タイトルは環境変数と標準入力で渡す**:`${{ }}` で `run` に直接書くと、タイトルがシェルのスクリプトの一部として展開され、タイトルに書いたコマンドが流れる(script injection)。引数でなく標準入力で渡すのは、`-` で始まるタイトルを option と読ませないため。
 - **ほかのリポジトリの名前は探さない**:CI には名前の一覧が無い(一覧は手元にだけ置くため)。名前は、手元の `bun run check` とコミットのときの hook が探す。
 
@@ -248,7 +248,7 @@ GitHub Actions の workflow を、`.github/workflows/` に2つ置く。job の�
 - **コンポーネントのテストの並行**:コンポーネントのテストは、1つの document を共有し、テストのたびに全部を外す。`test.concurrent` で並べると、先に終わったテストの後始末が、ほかのテストの描画まで消す。`bun test` は既定で順に流し、並行にするのはわざわざ書いたときだけなので受け入れる。
 - **テストを分ける条件**:`test:components` は、パスに `.svelte.test.ts` を含むファイルを選ぶ(`bun test` の引数は部分一致)。`.svelte.test.tsx` のような名前は両方に当たるが、Svelte では `.tsx` を使わないので受け入れる。
 - **Markdown のフェンスの端の場合**:用語集の検査は、引用(`>`)の中のフェンスや、情報文字列にバッククォートを含む不正なフェンスを、CommonMark と違う形で読む。普通の文書には現れないので受け入れる。
-- **squash の画面で書き換えたメッセージ**:「Squash and merge」の画面では、main に残るメッセージを書き換えられる。CI が確かめるのは PR のタイトルなので、書き換えた中身は誰も確かめない。merge するのはユーザーだけで、既定ではタイトルがそのまま入るので受け入れる。
+- **squash の画面で書き換えたメッセージ**:「Squash and merge」の画面では、main に残るメッセージを書き換えられる。CI が確かめるのは PR のタイトルなので、書き換えた中身は誰も確かめない。既定ではタイトルがそのまま入り、書き換えるのは画面でわざと直したときだけなので受け入れる。
 - **PR が検査そのものを変えること**:`check` と `commit-messages` は、PR のブランチの workflow と検査のコードで流れる。PR が検査を常に通る形に変えても、必須の check は通る。merge するのはユーザーだけで、レビューで見るので受け入れる。外の人の PR を受けるようになったら、検査のコードの変更にユーザーのレビューを求めるかを決める。
 - **ログの workflow command**:commitlint は、通らなかったメッセージの行をそのままログに出す。メッセージに `::warning::` のような行があると、GitHub Actions が workflow command として読みうる(確かめていない)。job の権限は読み取りだけで、秘密も渡していない。環境変数や PATH を変える command は GitHub が既定で止めているので、偽の注釈が出るくらいで済む。受け入れる。
 - **レビューの回数の数え直し**:回数は、メインの checkout の結果のファイルから数える。結果のファイルを消すと回数が戻り、同じ名前のブランチを作り直すと、前のブランチの回数を引き継ぐ。どちらも普通の使い方では起きず、回数の上限は費用を抑えるための目安なので、受け入れる。

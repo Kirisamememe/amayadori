@@ -52,8 +52,7 @@
 - 本文は、1行目との間に空行を挟む。行の長さは問わない。
 - ほかのリポジトリの名前や中身を、メッセージにも書かない(上の「書き方」)。
 - コミットのときに、git の hook が検査を流す(`bun install` で入る)。hook を `--no-verify` で飛ばさない。通らなければ直してからコミットし、hook の側に無理があるならユーザーに報告する(`tooling/AGENTS.md`)。
-- PR を作る前に、タイトルを手元で `tooling/ci/check-pull-request-messages.ts` に通す(CI は、ほかのリポジトリの名前を探さない。流し方は `tooling/AGENTS.md`)。PR の本文は、どの検査も読まないので、名前が無いかを自分で見る。
-- main には PR で入れる(main の ruleset が、PR と CI の `check`・`commit-messages` を求める)。PR は「Squash and merge」で入れ、main に残るのは PR のタイトルなので、タイトルもコミットのメッセージと同じ形で書く。
+- PR のタイトルも、コミットのメッセージと同じ形で書く。PR を作る前に、タイトルを手元で `tooling/ci/check-pull-request-messages.ts` に通す(CI は、ほかのリポジトリの名前を探さない。流し方は `tooling/AGENTS.md`)。PR の本文は、どの検査も読まないので、名前が無いかを自分で見る。
 
 ## レビュー
 
