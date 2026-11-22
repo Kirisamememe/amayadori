@@ -2,8 +2,8 @@
 
 理由は同じフォルダの `DECISIONS.md` にある。
 
-- lint の設定は直下の `oxlint.config.ts` で、中身は `tooling/lint/config/` に分けて置く(組み込みのルール、自作と JS のプラグインのルール、`overrides`、API の制限を組み立てる関数)。設定のファイルは Node が TypeScript のまま読むので、相対 import に `.ts` を付ける。自作のルールは `tooling/lint/rules/` の `comments/`・`tests/`・`modules/`(`tooling/lint/plugin.mjs` がまとめる)。Oxlint は `.svelte` の `<script>` も lint するが、テンプレートと `<style>` は見ない。型付きのルールは `<script>` にも流れない。
-- `tooling/lint/config/` のモジュールを直したら、エディタで `Oxc: Restart oxlint Server` を実行する。エディタの Oxlint(LSP)は `oxlint.config.ts` だけを監視し、ほかのモジュールを直しても読み直さない(CLI と CI は毎回読み直す)。
+- lint の設定は直下の `oxlint.config.ts` で、中身は `tooling/lint/config/` に分けて置く(組み込みのプラグインのルール、自作と JS のプラグインのルール、`overrides`、API の制限を組み立てる関数)。設定のファイルは Node が TypeScript のまま読むので、相対 import に `.ts` を付ける。自作のルールは `tooling/lint/rules/` の `comments/`・`tests/`・`modules/`(`tooling/lint/plugin.mjs` がまとめる)。Oxlint は `.svelte` の `<script>` も lint するが、テンプレートと `<style>` は見ない。型付きのルールは `<script>` にも流れない。
+- `tooling/lint/config/` のモジュールを直したら、ユーザーに、エディタで `Oxc: Restart oxlint Server` を実行するよう伝える。エディタの Oxlint(LSP)は `oxlint.config.ts` だけを監視し、ほかのモジュールを直しても読み直さない(CLI と CI は毎回読み直す)。
 - フォルダの中身の数と名前は、lint ではなく `tooling/structure/` のテストが検査する(1ファイルずつ見る lint では、フォルダ全体を数えられない)。`src/routes/` の中では、SvelteKit の `[slug]`・`(group)` などの形も許す。
 - ファイルの長さと抑制の理由は、lint に加えて `tooling/structure/` のテストも検査する。`.svelte` は、`<script>`・マークアップ・`<style>` を合わせて数え(`tooling/structure/svelte-file.ts` が読み分ける)、`svelte-ignore` にも `--` の後の理由を求める。`<svelte:options runes={false} />` も止める。
 - `GLOSSARY.md` の「機械で探す語」に挙げた表記は、`tooling/structure/` のテストが文書・コメント・文字列(`.svelte` のマークアップを含む)から探す。コミットのメッセージからは、commit-msg の hook が探す。表記を足すときは、別の概念を指す正しい文まで落とさないかを確かめ、落としそうな文を `tooling/structure/__tests__/repository.test.ts` の例に足す。「機械で探す語」の表の見出しや書き方を変えるときは、`tooling/structure/glossary.ts` も合わせて直す。

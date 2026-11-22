@@ -23,7 +23,7 @@ const requireExtensions = (
   },
 ];
 
-/** 実行環境・テスト・場所ごとの設定(後に書いたものが勝つ)。 */
+/** 実行環境・テスト・場所ごとの設定。 */
 export const OVERRIDES: readonly OxlintOverride[] = [
   {
     files: ["tooling/**", "*.mjs", "*.config.ts"],

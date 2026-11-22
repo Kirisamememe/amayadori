@@ -1,6 +1,6 @@
 import type { DummyRuleMap } from "oxlint";
 
-/** 長いファイルとして扱い始める、コードの行数。 */
+/** 長いファイルとの境目の、コードの行数。 */
 export const LONG_FILE_CODE_LINES = 200;
 
 /** 自作のルールと、JS のプラグインのルール。 */

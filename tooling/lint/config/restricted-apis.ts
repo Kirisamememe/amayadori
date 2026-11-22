@@ -25,7 +25,7 @@ export type RestrictedApis = {
 };
 
 const RUNTIME =
-  "Bun と Node の API は src/ では使いません。ブラウザに届くコードと、Web 標準で書くサーバーのコードの置き場所です。";
+  "Bun と Node の API は src/ では使いません。ブラウザに届くコードと、Web 標準で書くサーバー側のコードの置き場所です。";
 
 /** src/ で止める、Bun と Node のモジュール。 */
 export const RUNTIME_PATTERNS: readonly RestrictedPattern[] = [
